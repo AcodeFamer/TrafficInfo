@@ -47,7 +47,7 @@
 
 #include "Detector.h"
 
-#include "LinkInfo.h"
+#include "RoadInfo.h"
 
 #include "NodeInfo.h"
 
@@ -59,6 +59,13 @@
 
 #include "TrafficInfo.h"
 
+#include "LinkInfo.h"
+
+#include "CrossingStream.h"
+
+#include "ControlPlan.h"
+
+#include "Phase.h"
 using namespace std;
 
 #include <atltime.h>  //CTime¿‡

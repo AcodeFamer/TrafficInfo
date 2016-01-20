@@ -67,9 +67,6 @@ int VspdCToMySQL::ConnMySQL(char *host,char * port ,char * Db,char * user,char* 
 //查询数据
 vector<vector<string>> VspdCToMySQL::SelectData(const char * SQL,int Cnum,string& Msg)
 {
-   
-
-
    vector<vector<string>> query_res;
 
 

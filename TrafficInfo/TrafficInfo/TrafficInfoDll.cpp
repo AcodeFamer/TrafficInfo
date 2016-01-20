@@ -33,6 +33,17 @@ void CALLBACK TimerProc(HWND   hWnd, UINT   nMsg, UINT   nTimerid, DWORD   dwTim
 //声明定时器2的回调函数
 void CALLBACK TimerProc2(HWND   hWnd, UINT   nMsg, UINT   nTimerid, DWORD   dwTime);
 
+
+
+struct SIGPRI_s
+{
+	char* inlink;
+	char* outlink;
+	int	  priority;
+};
+
+
+
 /*********************************************路网打开前**********************************************/
 void qpx_NET_preOpen()
 {
@@ -47,11 +58,11 @@ void qpx_NET_preOpen()
 	//连接数据库
 	if(mysql->ConnMySQL(host,port,dbname,user,passwd,charset,Msg) != 0)
 	{
-		MessageBox(NULL,"数据库连接失败！","告知",MB_OK);
+		qps_GUI_printf("database connect fail");
 	}
 	else
 	{
-		MessageBox(NULL,"数据库连接成功！","告知",MB_OK);
+		qps_GUI_printf("database connect success");
 	}
 }
 /*********************************************路网开启后**********************************************/
@@ -62,14 +73,11 @@ void qpx_NET_postOpen()
 	//路网名称
 	char* net_file_path=qpg_NET_dataPath();
 
-	CString message1(net_file_path);
-	MessageBox(NULL, message1, "告知1", MB_OK);
-
 	//从路径中取得名字(即为路网Id)
 	string netName=getFileName(net_file_path);
 
-	CString message2(netName.c_str());
-	MessageBox(NULL, message2, "告知2", MB_OK);
+	
+	qps_GUI_printf("road net name: %s",netName.c_str());
 
 	//获取节点，路段，子区，检测器数量信息
 	//node数
@@ -81,9 +89,9 @@ void qpx_NET_postOpen()
 	//detector数
 	RoadNetInfo::detectorNum = qpg_NET_detectors();
 
-	CString message3;
-	message3.Format("nodeNum=%d,linkNum=%d,zoneNum=%d,detectorNum=%d", RoadNetInfo::nodeNum, RoadNetInfo::linkNum, RoadNetInfo::zoneNum, RoadNetInfo::detectorNum);
-	MessageBox(NULL, message3, "告知3", MB_OK);
+	
+	qps_GUI_printf("nodeNum=%d,linkNum=%d,zoneNum=%d,detectorNum=%d", RoadNetInfo::nodeNum, RoadNetInfo::linkNum, RoadNetInfo::zoneNum, RoadNetInfo::detectorNum);
+
 	
 	//获取检测器指针和检测器id
 	RoadNetInfo::getAllDetectorPointer(RoadNetInfo::detectorNum);
@@ -107,10 +115,9 @@ void qpx_NET_postOpen()
 	else
 	{
 		
-
 		if (RoadNetInfo::IsRoadNetModified(mysql, netName) == 1)
 		{
-			MessageBox(NULL, "Not New RoadNet", "告知", MB_OK);
+			qps_GUI_printf("road net has modified");
 			//更新roadnetinfo表
 			RoadNetInfo::updateRoadNetInfoTable(mysql, netName);
 			//清除相关数据表
@@ -121,7 +128,7 @@ void qpx_NET_postOpen()
 		
 	}
 
-	//*******************************************获取所有线圈指针
+	//*******************************************获取所有线圈指针**************************************************
 	for (int i = 0; i < RoadNetInfo::detectorNum; i++)
 	{
 		int startLane = qpg_DTC_lane(RoadNetInfo::allDetectorPointer[i]);
@@ -138,13 +145,15 @@ void qpx_NET_postOpen()
 	}
 
 
+
 	RoadNetInfo::initCountLoop();
 	RoadNetInfo::initCountDetector();
 
 	//清空实时交通信息表
 	string Msg;
 	mysql->ClearTable("trafficinfo", Msg);
-	MessageBox(NULL, "准备开始模拟", "告知4", MB_OK);
+	
+	qps_GUI_printf("wait for simulation start");
 
 	//开启路网后新增一条仿真记录
 	//SimRecord sm(netName,"", 1.00, STATISTIC_STEP,0,0,"","","",0,"","","" );
@@ -156,6 +165,7 @@ void qpx_NET_postOpen()
 
 	//开启1s的定时器
 	SetTimer(NULL, 1, 1000, TimerProc);
+
 }
 
 int restart_flag = 0;

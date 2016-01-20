@@ -147,6 +147,17 @@ vector<string> RoadNetInfo::getAllNodeId(int nodeNum)
 	return allNodeId;
 }
 
+vector<LINK*> RoadNetInfo::getAllLinkPointer(int LinkNum)
+{
+	vector<LINK*> allLinkPointer;
+	for (int i = 0; i < LinkNum; i++)
+	{
+		LINK* pLink = qpg_NET_linkByIndex(i + 1);
+		allLinkPointer.push_back(pLink);
+	}
+	return allLinkPointer;
+}
+
 vector<NODE*> RoadNetInfo::getAllNodePointer(int nodeNum)
 {
 	vector<NODE*> allNodePointer;
@@ -215,6 +226,91 @@ void RoadNetInfo::updateRoadNetInfoTable(VspdCToMySQL* mysql,string net_name)
 
 void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 {
+	/*****************************************连接明细表更新***************************************************/
+	//获取所有的link指针
+	vector<LINK*> allLinkPointer = getAllLinkPointer(linkNum);
+	//遍历所有link
+	for (int i = 0; i < linkNum; i++)
+	{
+		//获取该LINK的两个NODE指针
+		NODE* nodeA = qpg_LNK_nodeStart(allLinkPointer[i]);
+		NODE* nodeB = qpg_LNK_nodeEnd(allLinkPointer[i]);
+		//获取对应id
+		string nodeA_id = qpg_NDE_name(nodeA);
+		string nodeB_id = qpg_NDE_name(nodeB);
+
+		//qps_GUI_printf("此link两个node的id长度和:%d", nodeA_id.size() + nodeB_id.size());
+
+
+		string start_node, end_node, road_id;
+		float dis = qpg_LNK_length(allLinkPointer[i]);   //路段长度
+		//一个路口节点（或小区节点）和一个路口间节点相连
+		if (nodeA_id.size() + nodeB_id.size() == 17)
+		{
+			if (nodeA_id.size() == 12)
+			{
+				//正向LINk
+				start_node = nodeA_id;
+				end_node = nodeB_id;
+				road_id = nodeA_id.substr(0, 10);
+				//写数据库
+				LinkInfo link1(start_node, end_node, road_id, dis);
+				link1.writeDataToSql(mysql);
+				//如果是双向的，则写反向LINK
+				if (nodeA_id[10] == '0')
+				{
+					start_node = nodeB_id;
+					end_node = nodeA_id;
+					road_id = nodeA_id.substr(5, 5) + nodeA_id.substr(0, 5);
+					LinkInfo link2(start_node, end_node, road_id, dis);
+					link2.writeDataToSql(mysql);
+				}
+			}
+			else
+			{
+				//正向LINk
+				start_node = nodeB_id;
+				end_node = nodeA_id;
+				road_id = nodeB_id.substr(0, 10);
+				//写数据库
+				LinkInfo link1(start_node, end_node, road_id, dis);
+				link1.writeDataToSql(mysql);
+				//如果是双向的，则写反向LINK
+				if (nodeB_id[10] == '0')
+				{
+					start_node = nodeA_id;
+					end_node = nodeB_id;
+					road_id = nodeB_id.substr(5, 5) + nodeB_id.substr(0, 5);
+					LinkInfo link2(start_node, end_node, road_id, dis);
+					link2.writeDataToSql(mysql);
+				}
+			}
+		}
+		//2个路口间节点相连
+		else
+		{
+			//这两个节点id的前十位一定相同
+			//正向
+			start_node = nodeA_id;
+			end_node = nodeB_id;
+			road_id = nodeA_id.substr(0, 10);
+			LinkInfo link1(start_node, end_node, road_id, dis);
+			link1.writeDataToSql(mysql);
+			//若双向，添加反向
+			if (nodeA_id[10] == '0')
+			{
+				start_node = nodeB_id;
+				end_node = nodeA_id;
+				road_id = nodeA_id.substr(5, 5) + nodeA_id.substr(0, 5);
+				LinkInfo link2(start_node, end_node, road_id, dis);
+				link2.writeDataToSql(mysql);
+			}
+		}
+	}
+
+	qps_GUI_printf("linkinfo success");
+
+
 	/*****************************节点信息表更新**************************************/
 	//获取所有节点指针
 	vector<NODE*> allNodePointer = RoadNetInfo::getAllNodePointer(nodeNum);
@@ -225,14 +321,6 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 	//解析所有路网节点Id
 	for (size_t i = 0; i<allNodeId.size(); i++)
 	{
-		//调试信息
-		if (allNodeId[i].size() != 5 && allNodeId[i].size() != 12)
-		{
-			CString message_temp(allNodeId[i].c_str());
-
-			MessageBox(NULL, message_temp, "告知", MB_OK);
-			continue;
-		}
 		//路口节点或小区节点
 		if (allNodeId[i].size() == 5)
 		{
@@ -242,9 +330,104 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 				//get与该节点相连节点数目
 				int con_num = qpg_NDE_links(allNodePointer[i]);
 
+				int is_singal;
+				if (qpg_NDE_signalised(allNodePointer[i]) == TRUE)  //该路口信号化，写控制方案表
+				{
+					is_singal = 1;
+					//**********************************************控制方案表**************************************************
+					//每个路口对应一个控制方案
+					int phase_num = qpg_NDE_phases(allNodePointer[i]);//相位数
+					float period;//周期
+					qpg_SIG_inquiry(allNodePointer[i], 1, API_INQUIRY_CYCLE_TIME, &period);
+					int is_period_fixed;  //是否固定周期
+					if (qpg_NDE_variable(allNodePointer[i]))
+					{
+						is_period_fixed = 0;
+					}
+					else
+					{
+						is_period_fixed = 1;
+					}
+					float offset_time;
+					qpg_SIG_inquiry(allNodePointer[i], 1, API_INQUIRY_OFFSET, &offset_time);
+					ControlPlan cp(allNodeId[i], phase_num, is_period_fixed, 1 - is_period_fixed, period, offset_time, 0);
+					cp.writeDataToSql(mysql);
+
+					//**********************************************相位表**************************************************
+					//对该控制方案的每一个相位，添加一条数据到相位表,查询controlplan中最后一条的编号
+					
+					char* SQL = "select PlanIndex from controlplan where PlanIndex=(select max(PlanIndex) from controlplan);";
+					string Msg;
+					vector<vector<string>> res = mysql->SelectData(SQL, 1, Msg);
+					int plan_index;
+					if (res.size() != 0)
+					{
+						plan_index = str2int(res[0][0]);
+					}
+				
+					
+					for (int phase_i = 0; phase_i < phase_num; phase_i++)
+					{
+						float green_time,red_time,amber_time;
+						qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_STORED_GREEN, &green_time);
+						qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_STORED_RED, &red_time);
+						amber_time = qpg_CFG_amberTime();
+						green_time = green_time - amber_time; //获取到的绿灯时间中包含黄灯时间
+						
+						Phase p(plan_index, phase_i + 1, allNodeId[i], green_time, amber_time, red_time, 0);
+						p.writeDataToSql(mysql);
+					}
+				}
+				else
+				{
+					is_singal = 0;
+				}
 				//路口数据写入数据库
-				NodeInfo node(allNodeId[i], "", 0, 1, con_num, 1, 0, "");
+				NodeInfo node(allNodeId[i], "", 0, 1, con_num, is_singal, 0, "");
 				node.writeDataToSql(mysql);
+
+				//**********************************************路口车流表**************************************************
+				//每个路口的进入link数和出link数
+				int entry_links=qpg_NDE_AllLinksIn(allNodePointer[i]);
+				int exit_links = qpg_NDE_AllLinksOut(allNodePointer[i]);
+				for (int in = 0; in < entry_links; in++)
+				{
+					for (int out = 0; out < exit_links; out++)
+					{
+						//相应的进出link指针
+						LINK* link_in = qpg_NDE_linkEntry(allNodePointer[i], in + 1);
+						LINK* link_out = qpg_NDE_link(allNodePointer[i], out + 1);
+						//获取priority
+						int pri = qpg_LNK_priority(link_in, link_out);
+						string priority;
+						switch (pri)
+						{
+						case APIPRI_MAJOR:
+							priority = "MAJOR";
+							break;
+						case APIPRI_MEDIUM:
+							priority = "MEDIUM";
+							break;
+						case APIPRI_MINOR:
+							priority = "MINOR";
+							break;
+						case APIPRI_BARRED:
+							priority = "BARRED";
+							break;
+						default:
+							;
+						}
+						string road_id_in, road_id_out;
+						
+						int link_in_index = LinkInfo::getLinkInfo(mysql, 1, link_in, road_id_in);
+						int link_out_index = LinkInfo::getLinkInfo(mysql, 2, link_out, road_id_out);
+						
+						CrossingStream cs(allNodeId[i], int2str(link_in_index), int2str(link_out_index), road_id_in, road_id_out, priority);
+						cs.writeDataToSql(mysql);
+					
+
+					}
+				}
 			}
 			//Id末两位不全为0 小区节点
 			else
@@ -291,12 +474,12 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 			{
 				string road_link_id = node1 + node2;
 				//判断该id是否已经存入数据库，若没有，写入数据库
-				if (LinkInfo::IsRoadLinkIdExist(road_link_id) == 0)
+				if (RoadInfo::IsRoadLinkIdExist(road_link_id) == 0)
 				{
 					string start_node = node1;
 					string end_node = node2;
 					int dis = 0;
-					LinkInfo link(road_link_id, "", start_node, end_node, dis);
+					RoadInfo link(road_link_id, "", start_node, end_node, dis);
 					link.writeDataToSql(mysql);
 				}
 
@@ -305,22 +488,22 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 			{
 
 				string road_link_id_1 = node1 + node2;
-				if (LinkInfo::IsRoadLinkIdExist(road_link_id_1) == 0)
+				if (RoadInfo::IsRoadLinkIdExist(road_link_id_1) == 0)
 				{
 					string start_node_1 = node1;
 					string end_node_1 = node2;
 					int dis_1 = 0;
-					LinkInfo link_1(road_link_id_1, "", start_node_1, end_node_1, dis_1);
+					RoadInfo link_1(road_link_id_1, "", start_node_1, end_node_1, dis_1);
 					link_1.writeDataToSql(mysql);
 				}
 
 				string road_link_id_2 = node2 + node1;
-				if (LinkInfo::IsRoadLinkIdExist(road_link_id_2) == 0)
+				if (RoadInfo::IsRoadLinkIdExist(road_link_id_2) == 0)
 				{
 					string start_node_2 = node2;
 					string end_node_2 = node1;
 					int dis_2 = 0;
-					LinkInfo link_2(road_link_id_2, "", start_node_2, end_node_2, dis_2);
+					RoadInfo link_2(road_link_id_2, "", start_node_2, end_node_2, dis_2);
 					link_2.writeDataToSql(mysql);
 				}
 
@@ -329,8 +512,8 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 		}
 	}
 
-	MessageBox(NULL, "节点信息表、路段信息表数据库成功", "告知5", MB_OK);
-
+	qps_GUI_printf("nodeinfo,roadinfo  success");
+	
 	/*****************************************检测器表更新***************************************************/
 	// 获取所有检测器指针
 //	vector<DETECTOR*> allDetectorPointer = RoadNetInfo::getAllDetectorPointer(detectorNum);
@@ -367,7 +550,7 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 		Detector detector(allDetectorId[i], "", road_link_id, flag, down_stream_index, crossing, lane_num);
 		detector.writeDataToSql(mysql);
 	}
-	MessageBox(NULL, "检测器表写入成功", "告知6", MB_OK);
+	qps_GUI_printf("detector success");
 
 	/**************************检测断面表更新******************************/
 	//获取所有中游标识检测器对应的路段id
@@ -415,17 +598,26 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 		section.writeDataToSql(mysql);
 
 	}
-	MessageBox(NULL, "检测断面表写入成功", "告知6", MB_OK);
+	qps_GUI_printf("section success");
+
+
+
 }
 
 void RoadNetInfo::clearTable(VspdCToMySQL* mysql)
 {
 	string Msg;
+
+	
+
 	//清空数据库表
 	mysql->ClearTable("detector", Msg);
-	mysql->ClearTable("linkinfo", Msg);
+	mysql->ClearTable("roadInfo", Msg);
 	mysql->ClearTable("nodeinfo", Msg);
 	mysql->ClearTable("section", Msg);
+	mysql->ClearTable("linkinfo", Msg);
+	mysql->ClearTable("controlplan",Msg);
+	mysql->ClearTable("phase", Msg);
 }
 
 

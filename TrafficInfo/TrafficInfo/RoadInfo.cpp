@@ -1,20 +1,19 @@
 #include "stdafx.h"
-#include "LinkInfo.h"
+#include "RoadInfo.h"
 
 
-vector<string> LinkInfo::allRoadLinkId;
-
-LinkInfo::LinkInfo()
+vector<string> RoadInfo::allRoadLinkId;
+RoadInfo::RoadInfo()
 {
 
 }
 
-LinkInfo::LinkInfo(string id,string name,string start_node,string end_node,int dis)
+RoadInfo::RoadInfo(string id, string name, string start_node, string end_node, int dis)
 {
 	
-	LinkId=id;
+	RoadId=id;
 	
-	LinkName=name;
+	RoadName=name;
 
 	StartNode=start_node;
 
@@ -25,33 +24,33 @@ LinkInfo::LinkInfo(string id,string name,string start_node,string end_node,int d
 
 }
 
-LinkInfo::~LinkInfo()
+RoadInfo::~RoadInfo()
 {
 
 }
 
-int LinkInfo::writeDataToSql( VspdCToMySQL* mysql )
+int RoadInfo::writeDataToSql(VspdCToMySQL* mysql)
 {
 	vector<string> key;
-	key.push_back("LinkId");
-	key.push_back("LinkName");
+	key.push_back("RoadId");
+	key.push_back("RoadName");
 	key.push_back("StartNode");
 	key.push_back("EndNode");
 	key.push_back("Distance");
 
 
 	vector<string> values;
-	values.push_back(LinkId);
-	values.push_back(LinkName);
+	values.push_back(RoadId);
+	values.push_back(RoadName);
 	values.push_back(StartNode);
 	values.push_back(EndNode);
 	values.push_back(int2str(Distance));
 
 
-	if (mysql->add_data("linkinfo", key, values)==0)
+	if (mysql->add_data("roadinfo", key, values)==0)
 	{
 		//路段Id成功写入数据库时，同时添加到allRoadLinkId
-		allRoadLinkId.push_back(LinkId);
+		allRoadLinkId.push_back(RoadId);
 		return 0;
 	}
 		
@@ -59,7 +58,7 @@ int LinkInfo::writeDataToSql( VspdCToMySQL* mysql )
 		return 1;
 }
 
-int LinkInfo::IsRoadLinkIdExist(string road_link_id)
+int RoadInfo::IsRoadLinkIdExist(string road_link_id)
 {
 	for (size_t i = 0; i < allRoadLinkId.size(); i++)
 	{

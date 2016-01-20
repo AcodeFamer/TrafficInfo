@@ -44,6 +44,8 @@
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>E:\wamp\bin\mysql\mysql5.5.20\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\wamp\bin\mysql\mysql5.5.20\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -87,8 +89,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ControlPlan.cpp" />
+    <ClCompile Include="CrossingStream.cpp" />
     <ClCompile Include="Detector.cpp" />
     <ClCompile Include="LinkInfo.cpp" />
+    <ClCompile Include="Phase.cpp" />
+    <ClCompile Include="RoadInfo.cpp" />
     <ClCompile Include="NodeInfo.cpp" />
     <ClCompile Include="RoadNetInfo.cpp" />
     <ClCompile Include="Section.cpp" />
@@ -104,8 +110,12 @@
     <ClCompile Include="VspdCTOMySQL.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ControlPlan.h" />
+    <ClInclude Include="CrossingStream.h" />
     <ClInclude Include="Detector.h" />
     <ClInclude Include="LinkInfo.h" />
+    <ClInclude Include="Phase.h" />
+    <ClInclude Include="RoadInfo.h" />
     <ClInclude Include="NodeInfo.h" />
     <ClInclude Include="RoadNetInfo.h" />
     <ClInclude Include="Section.h" />
