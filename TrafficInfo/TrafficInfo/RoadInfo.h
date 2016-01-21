@@ -19,12 +19,12 @@ class RoadInfo
     //结束节点
     string EndNode;
     //距离
-    int Distance;
+    float Distance;
     
 
 public:
 	RoadInfo();
-	RoadInfo(string, string, string, string, int);
+	RoadInfo(string, string, string, string, float);
 	~RoadInfo();
 
 	int writeDataToSql(VspdCToMySQL* mysql);

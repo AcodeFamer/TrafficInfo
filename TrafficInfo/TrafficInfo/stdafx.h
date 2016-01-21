@@ -66,6 +66,8 @@
 #include "ControlPlan.h"
 
 #include "Phase.h"
+
+#include "PhaseStream.h"
 using namespace std;
 
 #include <atltime.h>  //CTime¿‡

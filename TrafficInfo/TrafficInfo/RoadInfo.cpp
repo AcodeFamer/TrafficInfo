@@ -8,7 +8,7 @@ RoadInfo::RoadInfo()
 
 }
 
-RoadInfo::RoadInfo(string id, string name, string start_node, string end_node, int dis)
+RoadInfo::RoadInfo(string id, string name, string start_node, string end_node, float dis)
 {
 	
 	RoadId=id;
@@ -44,7 +44,7 @@ int RoadInfo::writeDataToSql(VspdCToMySQL* mysql)
 	values.push_back(RoadName);
 	values.push_back(StartNode);
 	values.push_back(EndNode);
-	values.push_back(int2str(Distance));
+	values.push_back(float2str(Distance));
 
 
 	if (mysql->add_data("roadinfo", key, values)==0)

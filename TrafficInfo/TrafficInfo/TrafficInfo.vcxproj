@@ -94,6 +94,7 @@
     <ClCompile Include="Detector.cpp" />
     <ClCompile Include="LinkInfo.cpp" />
     <ClCompile Include="Phase.cpp" />
+    <ClCompile Include="PhaseStream.cpp" />
     <ClCompile Include="RoadInfo.cpp" />
     <ClCompile Include="NodeInfo.cpp" />
     <ClCompile Include="RoadNetInfo.cpp" />
@@ -115,6 +116,7 @@
     <ClInclude Include="Detector.h" />
     <ClInclude Include="LinkInfo.h" />
     <ClInclude Include="Phase.h" />
+    <ClInclude Include="PhaseStream.h" />
     <ClInclude Include="RoadInfo.h" />
     <ClInclude Include="NodeInfo.h" />
     <ClInclude Include="RoadNetInfo.h" />

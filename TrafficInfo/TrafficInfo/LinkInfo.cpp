@@ -83,17 +83,19 @@ int LinkInfo::getLinkInfo(VspdCToMySQL* mysql, int flag, LINK* pLink, string& ro
 		}
 	}
 	//根据起始节点和结束节点,查询数据库
-	string SQL = "select * from linkinfo where StartNode=";
+	string SQL = "select LinkIndex,RoadId from linkinfo where StartNode=";
 	SQL = SQL + "'" + start_node + "' and EndNode='" + end_node + "'";
 	string Msg;
-	vector<vector<string>>  res = mysql->SelectData(SQL.c_str(), 5, Msg);
-	if (res.size() != 0)
+	vector<vector<string>>  res = mysql->SelectData(SQL.c_str(), 2, Msg);
+	if (res.size() != 0)  
 	{
-		//所属路段编号
-		road_id = res[0][3];
+		road_id = res[0][1];
 		return str2int(res[0][0]);
 	}
+	else
+	{
+		qps_GUI_printf("start:%s,end:end:%s",start_node.c_str(),end_node.c_str());
+	}
 	return 0;
-	
 }
 

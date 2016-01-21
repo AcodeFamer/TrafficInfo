@@ -54,6 +54,9 @@
     <Filter Include="源码\Phase">
       <UniqueIdentifier>{0cda50dc-a2d0-4929-8add-07d3411cabee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源码\PhaseStream">
+      <UniqueIdentifier>{e7100245-84bd-475e-8dd0-9886bb47e8a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Detector.cpp">
@@ -104,6 +107,9 @@
     <ClCompile Include="Phase.cpp">
       <Filter>源码\Phase</Filter>
     </ClCompile>
+    <ClCompile Include="PhaseStream.cpp">
+      <Filter>源码\PhaseStream</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Detector.h">
@@ -150,6 +156,9 @@
     </ClInclude>
     <ClInclude Include="Phase.h">
       <Filter>源码\Phase</Filter>
+    </ClInclude>
+    <ClInclude Include="PhaseStream.h">
+      <Filter>源码\PhaseStream</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
