@@ -16,6 +16,9 @@ public:
 	~Phase();
 
 	int writeDataToSql(VspdCToMySQL* mysql);
+
+	//根据制定的控制方案，获取每一个相位的绿灯，红灯时间
+	static vector<vector<string>>  getSingalTimeByIndex(VspdCToMySQL* mysql, int plan_index);
 };
 
 #endif

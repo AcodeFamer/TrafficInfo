@@ -236,6 +236,45 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 		RoadNetInfo::ODvalue = od_value;          //保存新的ODvalue
 	}
 
+	//if (sim_state == 1)
+	//{
+		//查看控制方案表是否有控制方案更新，若有，从相位表中查询对应更新的红绿灯时间进更改设置
+		vector<vector<string>> update_plan_info = ControlPlan::getPlanUpdateIndex(mysql);
+
+		for (size_t plan_i = 0; plan_i < update_plan_info.size(); plan_i++)
+		{
+			//从获取控制方案信息中提取方案编号 周期 路口id
+
+			int plan_index = str2int(update_plan_info[plan_i][0]);
+			string crossing_id = update_plan_info[plan_i][1];
+		    float period = atof(update_plan_info[plan_i][2].c_str());
+
+			//对每一个控制方案编号，获取对应所有相位的信号灯时间
+			vector<vector<string>> update_phase_info = Phase::getSingalTimeByIndex(mysql,plan_index);
+			float time_sum=0.0;
+			qps_GUI_printf("plan_index=%d", plan_index);
+			for (size_t phase_i = 0; phase_i < update_phase_info.size(); phase_i++)
+			{
+				//累加所有时间，如果和period相同，则更新时间设置
+				time_sum += atof(update_phase_info[phase_i][0].c_str()) + atof(update_phase_info[phase_i][1].c_str()) + atof(update_phase_info[phase_i][2].c_str());
+				qps_GUI_printf("green=%f amber=%f red=%f", atof(update_phase_info[phase_i][0].c_str()), atof(update_phase_info[phase_i][1].c_str()), atof(update_phase_info[phase_i][2].c_str()));
+			}
+
+			qps_GUI_printf("crossing_id=%s", crossing_id.c_str());
+
+			if (time_sum == period)
+			{
+				for (size_t phase_i = 0; phase_i < update_phase_info.size(); phase_i++)
+				{
+					//由于设置的绿灯时间对应黄灯和绿灯的总时间，所以在设置时要加上系统的黄灯时间
+					qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_GREEN, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][0].c_str())+3);
+					qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_RED, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][2].c_str()));
+				}
+			}
+
+		}
+	
+	//}
 }
 
 //**************************************每一个仿真步开始调用
@@ -250,17 +289,6 @@ void qpx_NET_timeStep(void)
 	}
 }
 
-
-/*
-//声明定时器2的回调函数
-void CALLBACK TimerProc2(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
-{
-	KillTimer(NULL, 2);
-	sim_state = 0;
-	qps_GUI_simRunning(PFALSE);
-	qps_GUI_printf("proc2 ,sim_state=%d", sim_state);
-}
-*/
 
 /*********************************************当有车经过检测器时******************************************/
 /*当有车经过检测器时，必然有一个检测器线圈记录的通过车辆数会变化，寻找这个变换也就找到了哪个检测器线圈有车辆通过
@@ -291,6 +319,7 @@ void qpx_VHC_detector(VEHICLE* vehicle, LINK* link, DETECTOR* detector)
 	}
 }
 
+int a = 32;
 /***********************************************模拟每执行一秒时调用*****************************************************/
 void qpx_NET_second(void)
 {

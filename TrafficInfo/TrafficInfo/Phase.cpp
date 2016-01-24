@@ -51,3 +51,13 @@ int Phase::writeDataToSql(VspdCToMySQL* mysql)
 		return 1;
 }
 
+vector<vector<string>> Phase::getSingalTimeByIndex(VspdCToMySQL* mysql, int plan_index)
+{
+	string SQL = "select GreenTime,AmberTime,RedTime from phase where PlanIndex=" + int2str(plan_index);
+
+	string Msg;
+	vector<vector<string>> res = mysql->SelectData(SQL.c_str(),3, Msg);
+
+	return res;
+}
+

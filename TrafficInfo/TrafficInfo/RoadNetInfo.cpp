@@ -52,6 +52,10 @@ vector<vector<float>> RoadNetInfo::velocityEveryLoopDuration;
 //OD矩阵
 vector<vector<float>> RoadNetInfo::demandMatrix;
 
+
+map<string, NODE*> RoadNetInfo::AllSignalisedNode;
+
+
 float RoadNetInfo::ODvalue = 1.0;
 RoadNetInfo::RoadNetInfo()
 {
@@ -354,6 +358,11 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 				{
 					is_singal = 1;
 					
+					//该信号化的节点加入map
+					AllSignalisedNode[allNodeId[i]] = allNodePointer[i];
+					//设置该路口为可变周期
+					qps_SIG_action(allNodePointer[i], 1, 0, API_ACTION_VARIABLE, API_ACTIONMODE_SET, 1);
+
 					//**********************************************路口车流表**************************************************
 					//每个路口的进入link数和出link数
 					int entry_links = qpg_NDE_entryLinks(allNodePointer[i]);

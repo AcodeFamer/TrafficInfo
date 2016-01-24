@@ -53,3 +53,17 @@ int ControlPlan::writeDataToSql(VspdCToMySQL *mysql)
 		return 1;
 }
 
+vector<vector<string>> ControlPlan::getPlanUpdateIndex(VspdCToMySQL* mysql)
+{
+	//查询控制方案表,出现更新的控制方案编号
+	char* SQL = "select PlanIndex,CrossingId,Period from controlplan where IsUpdate='1';";
+	string msg;
+	vector<vector<string>> res=mysql->SelectData(SQL, 3,msg);
+
+	
+	//读取完成后清除标志位
+	SQL = "update controlplan set IsUpdate='0' where IsUpdate='1'";
+	mysql->UpdateData(SQL, msg);
+	return res;
+}
+
