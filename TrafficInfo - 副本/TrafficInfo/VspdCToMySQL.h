@@ -1,11 +1,13 @@
 #ifndef __VSPDCTOMYSQL_H__
 #define __VSPDCTOMYSQL_H__
-#include<winsock2.h>
+
+#include <winsock2.h>
 #include <iostream>
 #include <string>
 #include <mysql.h>
 #include <tchar.h>
 #include <vector>
+
 using namespace std;
 
 typedef MYSQL*(__stdcall * MYSQL_INIT)(MYSQL*);
@@ -48,7 +50,7 @@ public:
       
        MYSQL mysql;
  
-       /*构造和析构函数*/
+      
        VspdCToMySQL();
        ~VspdCToMySQL();
  
@@ -57,43 +59,12 @@ public:
 
 	   //�ύ���񣺲�����ɺ��ύ����
 	   void CommitTransition();
-       /*
-       主要的功能：
-       初始化数据库
-       连接数据�?
-       设置字符�?
-       
-       
-       入口参数
-       host:服务器IP
-       Db：数据库名称
-       user：数据库用户
-       passwd：数据库用户的密�?
-       charset：希望使用的字符�?
-       Msg：返回的消息（包括错误消息）
-       
-       
-       出口参数�?
-       int �? 表示成功  1表示失败
-       */
+  
        
        
        int ConnMySQL(char *host,char * port,char * Db,char * user,char* passwd,char * charset,string& Msg);
  
-       /*
-       主要功能�?
-       插入数据
-       
-       入口参数�?
-       SQL:查询SQL语句
-       
-       Cnum：查询的列数
-       Msg：返回的消息（包括错误消息）
-       
-       出口参数：string 准备放置返回的数据，多条记录则用0x06展开，多个栏位用0x05隔开
-       如果范围的长度为0 ，则表示无结�?
-
-      */
+     
        vector<vector<string>> SelectData(const char * SQL,int Cnum ,string& Msg);
       
        /*
@@ -101,36 +72,13 @@ public:
        */
        int InsertData(const char * SQL,string& Msg);
        
-       /*
-       主要功能�?
-       修改数据
-       
-       入口参数�?
-       SQL：查询的SQL语句
-       Msg：返回的消息（包括错误消息）
-       
-       出口参数�?
-       int�? 表示成功�?表示失败
-       */
+      
        int UpdateData(const char * SQL,string& Msg);
        
        
-       /*
-       主要功能�?
-       删除数据
        
-       入口参数�?
-       SQL：查询的SQL语句
-       Msg：返回的消息（包括错误消息）
-       
-       出口参数�?
-       int�? 表示成功�?表示失败
-       */
        int DeleteData(const char * SQL,string& Msg);
-       /*
-       主要功能�?
-       关闭数据库连�?
-       */
+       
        void CloseMySQLConn();
 
 

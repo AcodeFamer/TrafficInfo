@@ -45,29 +45,13 @@
 
 #include "utility.h"
 
-#include "Detector.h"
+#include "data.h"
 
-#include "RoadInfo.h"
+#include "DBoperation.h"
 
-#include "NodeInfo.h"
+#include "RoadAnalysis.h"
 
-#include "RoadNetInfo.h"
-
-#include "Section.h"
-
-#include "SimRecord.h"
-
-#include "TrafficInfo.h"
-
-#include "LinkInfo.h"
-
-#include "CrossingStream.h"
-
-#include "ControlPlan.h"
-
-#include "Phase.h"
-
-#include "PhaseStream.h"
+#include "SimData.h"
 using namespace std;
 
 #include <atltime.h>  //CTime¿‡
