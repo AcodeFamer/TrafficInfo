@@ -1,0 +1,202 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="源码">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="源码\detector">
+      <UniqueIdentifier>{636dccda-334d-4036-8a25-626f2638e2c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\NodeInfo">
+      <UniqueIdentifier>{3a2dba64-5c79-4317-b781-c8dfb07c7b9f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\RoadNetInfo">
+      <UniqueIdentifier>{5c6d5dcc-3963-4dc7-8f6e-b1a654912908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\Section">
+      <UniqueIdentifier>{34290ceb-cce8-4fa8-a421-cdc2f4dde7df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\ulitity">
+      <UniqueIdentifier>{d7be0e86-5e2c-466b-abdc-a393f6241935}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\VspdCToMySQL">
+      <UniqueIdentifier>{cfdf6f01-6ff9-479a-88fe-27f24caa5242}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\stdafx">
+      <UniqueIdentifier>{d8c07715-1137-498e-a0e4-a12d10509181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\TrafficInfo">
+      <UniqueIdentifier>{0c872296-44d7-4d12-8a9e-8b725dc38a37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\TrafficFlowRecord">
+      <UniqueIdentifier>{83f7dadc-3493-43be-895c-c98375976dfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\SimRecord">
+      <UniqueIdentifier>{1ffb177c-93e8-497f-99ee-d1d11d760279}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\RoadInfo">
+      <UniqueIdentifier>{352d776c-5f7e-43fb-bc57-2543e7e658df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\LinkInfo">
+      <UniqueIdentifier>{7ccf631f-08e6-4ae7-9caf-bb4a6f283a45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\CrossingStream">
+      <UniqueIdentifier>{d71a3ab8-f373-4697-9782-5231b1790bab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\ControlPlan">
+      <UniqueIdentifier>{72d3a562-a368-4592-8af1-fb240c720d52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\Phase">
+      <UniqueIdentifier>{0cda50dc-a2d0-4929-8add-07d3411cabee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\PhaseStream">
+      <UniqueIdentifier>{e7100245-84bd-475e-8dd0-9886bb47e8a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\tinyxml">
+      <UniqueIdentifier>{e0646dd1-320b-4764-b871-02b4487efb39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\config">
+      <UniqueIdentifier>{4d65fcc5-1661-4070-940b-1b879c0b548f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Detector.cpp">
+      <Filter>源码\detector</Filter>
+    </ClCompile>
+    <ClCompile Include="NodeInfo.cpp">
+      <Filter>源码\NodeInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadNetInfo.cpp">
+      <Filter>源码\RoadNetInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="Section.cpp">
+      <Filter>源码\Section</Filter>
+    </ClCompile>
+    <ClCompile Include="utility.cpp">
+      <Filter>源码\ulitity</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源码\stdafx</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficInfo.cpp">
+      <Filter>源码\TrafficInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficInfoDll.cpp">
+      <Filter>源码</Filter>
+    </ClCompile>
+    <ClCompile Include="VspdCTOMySQL.cpp">
+      <Filter>源码\VspdCToMySQL</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficFlowRecord.cpp">
+      <Filter>源码\TrafficFlowRecord</Filter>
+    </ClCompile>
+    <ClCompile Include="SimRecord.cpp">
+      <Filter>源码\SimRecord</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadInfo.cpp">
+      <Filter>源码\RoadInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="LinkInfo.cpp">
+      <Filter>源码\LinkInfo</Filter>
+    </ClCompile>
+    <ClCompile Include="CrossingStream.cpp">
+      <Filter>源码\CrossingStream</Filter>
+    </ClCompile>
+    <ClCompile Include="ControlPlan.cpp">
+      <Filter>源码\ControlPlan</Filter>
+    </ClCompile>
+    <ClCompile Include="Phase.cpp">
+      <Filter>源码\Phase</Filter>
+    </ClCompile>
+    <ClCompile Include="PhaseStream.cpp">
+      <Filter>源码\PhaseStream</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinystr.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxml.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlerror.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlparser.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>源码\config</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Detector.h">
+      <Filter>源码\detector</Filter>
+    </ClInclude>
+    <ClInclude Include="NodeInfo.h">
+      <Filter>源码\NodeInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadNetInfo.h">
+      <Filter>源码\RoadNetInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="Section.h">
+      <Filter>源码\Section</Filter>
+    </ClInclude>
+    <ClInclude Include="utility.h">
+      <Filter>源码\ulitity</Filter>
+    </ClInclude>
+    <ClInclude Include="VspdCToMySQL.h">
+      <Filter>源码\VspdCToMySQL</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>源码\stdafx</Filter>
+    </ClInclude>
+    <ClInclude Include="TrafficInfo.h">
+      <Filter>源码\TrafficInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="TrafficFlowRecord.h">
+      <Filter>源码\TrafficFlowRecord</Filter>
+    </ClInclude>
+    <ClInclude Include="SimRecord.h">
+      <Filter>源码\SimRecord</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadInfo.h">
+      <Filter>源码\RoadInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="LinkInfo.h">
+      <Filter>源码\LinkInfo</Filter>
+    </ClInclude>
+    <ClInclude Include="CrossingStream.h">
+      <Filter>源码\CrossingStream</Filter>
+    </ClInclude>
+    <ClInclude Include="ControlPlan.h">
+      <Filter>源码\ControlPlan</Filter>
+    </ClInclude>
+    <ClInclude Include="Phase.h">
+      <Filter>源码\Phase</Filter>
+    </ClInclude>
+    <ClInclude Include="PhaseStream.h">
+      <Filter>源码\PhaseStream</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinystr.h">
+      <Filter>源码\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinyxml.h">
+      <Filter>源码\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>源码\config</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config.xml">
+      <Filter>资源文件</Filter>
+    </Xml>
+  </ItemGroup>
+</Project>
