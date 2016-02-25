@@ -1,11 +1,12 @@
 /*
 
 	mysql数据库中增删查改的操作的实现
-*/
 
+
+*/
 #ifndef __VSPDCTOMYSQL_H__
 #define __VSPDCTOMYSQL_H__
-#include <winsock2.h>
+#include<winsock2.h>
 #include <iostream>
 #include <string>
 #include <mysql.h>

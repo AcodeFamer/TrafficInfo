@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="源码">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="源码\ulitity">
+      <UniqueIdentifier>{d7be0e86-5e2c-466b-abdc-a393f6241935}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\VspdCToMySQL">
+      <UniqueIdentifier>{cfdf6f01-6ff9-479a-88fe-27f24caa5242}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\stdafx">
+      <UniqueIdentifier>{d8c07715-1137-498e-a0e4-a12d10509181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\data">
+      <UniqueIdentifier>{e6ede3d6-bb4b-419f-9cba-412bcf65f008}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\RoadAnalysis">
+      <UniqueIdentifier>{a080a322-004a-4731-94fc-7f16133d4182}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\DBoperation">
+      <UniqueIdentifier>{e1b3ead5-c6ef-46bc-afc9-9df92a0added}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\SimData">
+      <UniqueIdentifier>{19d38f5a-2c30-436d-8c0a-e09844bd5d4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\SimControl">
+      <UniqueIdentifier>{3f7edf39-9dc0-44ee-8d10-b90c099347e3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="utility.cpp">
+      <Filter>源码\ulitity</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源码\stdafx</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficInfoDll.cpp">
+      <Filter>源码</Filter>
+    </ClCompile>
+    <ClCompile Include="VspdCTOMySQL.cpp">
+      <Filter>源码\VspdCToMySQL</Filter>
+    </ClCompile>
+    <ClCompile Include="RoadAnalysis.cpp">
+      <Filter>源码\RoadAnalysis</Filter>
+    </ClCompile>
+    <ClCompile Include="DBoperation.cpp">
+      <Filter>源码\DBoperation</Filter>
+    </ClCompile>
+    <ClCompile Include="SimData.cpp">
+      <Filter>源码\SimData</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utility.h">
+      <Filter>源码\ulitity</Filter>
+    </ClInclude>
+    <ClInclude Include="VspdCToMySQL.h">
+      <Filter>源码\VspdCToMySQL</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>源码\stdafx</Filter>
+    </ClInclude>
+    <ClInclude Include="data.h">
+      <Filter>源码\data</Filter>
+    </ClInclude>
+    <ClInclude Include="DBoperation.h">
+      <Filter>源码\DBoperation</Filter>
+    </ClInclude>
+    <ClInclude Include="RoadAnalysis.h">
+      <Filter>源码\RoadAnalysis</Filter>
+    </ClInclude>
+    <ClInclude Include="SimData.h">
+      <Filter>源码\SimData</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+</Project>
