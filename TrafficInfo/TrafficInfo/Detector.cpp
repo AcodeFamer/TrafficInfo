@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "Detector.h"
 
+
+vector<Detector> Detector::allDetector;
+
 Detector::Detector()
 {
 

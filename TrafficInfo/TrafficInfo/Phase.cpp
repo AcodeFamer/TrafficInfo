@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "Phase.h"
 
+
+vector<Phase> Phase::allPhase;
+
+
 Phase::Phase()
 {
 
@@ -53,11 +57,14 @@ int Phase::writeDataToSql(VspdCToMySQL* mysql)
 
 vector<vector<string>> Phase::getSingalTimeByIndex(VspdCToMySQL* mysql, int plan_index)
 {
-	string SQL = "select GreenTime,AmberTime,RedTime from phase where PlanIndex=" + int2str(plan_index);
+	string SQL = "select GreenTime,AmberTime,RedTime,IsUpdate from phase where PlanIndex=" + int2str(plan_index);
 
 	string Msg;
-	vector<vector<string>> res = mysql->SelectData(SQL.c_str(),3, Msg);
+	vector<vector<string>> res = mysql->SelectData(SQL.c_str(),4, Msg);
 
+	//读取完成后清除标志位
+	string SQL_clear = "update phase set IsUpdate='0' where IsUpdate='1'";
+	mysql->UpdateData(SQL_clear.c_str(), Msg);
 	return res;
 }
 

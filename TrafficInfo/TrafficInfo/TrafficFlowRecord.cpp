@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "TrafficFlowRecord.h"
 
+vector<TrafficFlowRecord> TrafficFlowRecord::allTrafficFlowRecord;
+
 
 TrafficFlowRecord::TrafficFlowRecord()
 {
@@ -58,4 +60,6 @@ int TrafficFlowRecord::writeDataToSql(VspdCToMySQL* mysql)
 	else
 		return 1;
 }
+
+
 

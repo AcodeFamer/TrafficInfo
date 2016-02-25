@@ -1,3 +1,4 @@
+/****************实时交通信息表************************/
 #ifndef __TRAFFICINFO_H__
 #define __TRAFFICINFO_H__
 

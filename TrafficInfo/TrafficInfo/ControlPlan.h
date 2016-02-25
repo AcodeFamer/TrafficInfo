@@ -1,3 +1,4 @@
+/****************控制方案表******************/
 #ifndef __CONTROLPLAN_H__
 #define __CONTROLPLAN_H__
 
@@ -22,6 +23,8 @@ public:
 
 	//查询控制方案修改的方案编号和周期
 	static vector<vector<string>> getPlanUpdateIndex(VspdCToMySQL* mysql);
+
+	static vector<ControlPlan> allControlPlan;
 };
 
 

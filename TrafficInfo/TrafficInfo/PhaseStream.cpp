@@ -1,15 +1,18 @@
 #include "stdafx.h"
 #include "PhaseStream.h"
 
+vector<PhaseStream> PhaseStream::allPhaseStream;
+
 PhaseStream::PhaseStream()
 {
 
 }
 
-PhaseStream::PhaseStream(string phase_index, string stream_index, string dir_flag, string phase_id, string plan_index, string crossing_index, string link_in_id, string link_out_id)
+PhaseStream::PhaseStream(string phase_index, string stream_index, string priority,string dir_flag, string phase_id, string plan_index, string crossing_index, string link_in_id, string link_out_id)
 {
 	PhaseIndex = phase_index;
 	StreamIndex = stream_index;
+	Priority = priority;
 	DirectionFlag = dir_flag;
 	PhaseId = phase_id;
 	PlanIndex = plan_index;
@@ -28,6 +31,7 @@ int PhaseStream::writeDataToSql(VspdCToMySQL* mysql)
 	vector<string> key;
 	key.push_back("PhaseIndex");
 	key.push_back("StreamIndex");
+	key.push_back("Priority");
 	key.push_back("DirectionFlag");
 	key.push_back("PhaseId");
 	key.push_back("PlanIndex");
@@ -38,6 +42,7 @@ int PhaseStream::writeDataToSql(VspdCToMySQL* mysql)
 	vector<string> values;
 	values.push_back(PhaseIndex);
 	values.push_back(StreamIndex);
+	values.push_back(Priority);
 	values.push_back(DirectionFlag);
 	values.push_back(PhaseId);
 	values.push_back(PlanIndex);

@@ -22,6 +22,8 @@ public:
 	~CrossingStream();
 
 	int writeDataToSql(VspdCToMySQL* mysql);
+
+	static vector<CrossingStream> allCrossingStream;
 };
 
 

@@ -57,6 +57,7 @@ map<string, NODE*> RoadNetInfo::AllSignalisedNode;
 
 
 float RoadNetInfo::ODvalue = 1.0;
+
 RoadNetInfo::RoadNetInfo()
 {
   //  mysql = new VspdCToMySQL;
@@ -359,9 +360,9 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 					is_singal = 1;
 					
 					//该信号化的节点加入map
-					AllSignalisedNode[allNodeId[i]] = allNodePointer[i];
+					//AllSignalisedNode[allNodeId[i]] = allNodePointer[i];
 					//设置该路口为可变周期
-					qps_SIG_action(allNodePointer[i], 1, 0, API_ACTION_VARIABLE, API_ACTIONMODE_SET, 1);
+					//qps_SIG_action(allNodePointer[i], 1, 0, API_ACTION_VARIABLE, API_ACTIONMODE_SET, 1);
 
 					//**********************************************路口车流表**************************************************
 					//每个路口的进入link数和出link数
@@ -443,6 +444,12 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 						float green_time,red_time,amber_time;
 						qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_STORED_GREEN, &green_time);
 						qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_STORED_RED, &red_time);
+						//float cur_green, next_green;
+						//qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_CURRENT_GREEN, &cur_green);
+						//qpg_SIG_inquiry(allNodePointer[i], phase_i + 1, API_INQUIRY_NEXT_GREEN, &next_green);
+
+						//qps_GUI_printf("store_green=%f,cur_green=%f,next_green=%f", green_time, cur_green, next_green);
+
 						amber_time = qpg_CFG_amberTime();
 						green_time = green_time - amber_time; //获取到的绿灯时间中包含黄灯时间
 						
@@ -561,17 +568,18 @@ void RoadNetInfo::updateRoadInfo(VspdCToMySQL* mysql)
 		mes.Format("phase_i=%d,size=%d", phase_i,res_phase.size());
 		MessageBox(NULL, mes, "", MB_OK);
 		*/
-		//根据所属路口查询路口车流表中满足该路口信息的所有流入路段id和流出路段id
-		string SQL_crossingstream = "select StreamIndex,RoadInId,RoadOutId from crossingstream where CrossingId=";
+		//根据所属路口查询路口车流表中满足该路口信息的所有流入路段id和流出路段id,以及权限priority
+		string SQL_crossingstream = "select StreamIndex,RoadInId,RoadOutId,Priority from crossingstream where CrossingId=";
 		SQL_crossingstream = SQL_crossingstream + "'" + crossing_id + "'";
-		vector<vector<string>> res_crossingstream = mysql->SelectData(SQL_crossingstream.c_str(), 3, Msg);
+		vector<vector<string>> res_crossingstream = mysql->SelectData(SQL_crossingstream.c_str(), 4, Msg);
 		for (size_t crossingstream_i = 0; crossingstream_i < res_crossingstream.size(); crossingstream_i++)
 		{
-			string stream_index = res_crossingstream[crossingstream_i][0];
-			string link_in_id = res_crossingstream[crossingstream_i][1];
-			string link_out_id = res_crossingstream[crossingstream_i][2];
+			string stream_index = res_crossingstream[crossingstream_i][0]; //车流编号
+			string link_in_id = res_crossingstream[crossingstream_i][1];   //流入路段id
+			string link_out_id = res_crossingstream[crossingstream_i][2];  //流出路段id
+			string priority = res_crossingstream[crossingstream_i][3];     //车流权限
 
-			PhaseStream ps(int2str(phase_i), stream_index, "", phase_id, plan_index, crossing_id, link_in_id, link_out_id);
+			PhaseStream ps(int2str(phase_i), stream_index, priority,"", phase_id, plan_index, crossing_id, link_in_id, link_out_id);
 			ps.writeDataToSql(mysql);
 		}
 	}
@@ -672,8 +680,6 @@ void RoadNetInfo::clearTable(VspdCToMySQL* mysql)
 {
 	string Msg;
 
-	
-
 	//清空数据库表
 	mysql->ClearTable("detector", Msg);
 	mysql->ClearTable("roadinfo", Msg);
@@ -683,6 +689,7 @@ void RoadNetInfo::clearTable(VspdCToMySQL* mysql)
 	mysql->ClearTable("controlplan",Msg);
 	mysql->ClearTable("phase", Msg);
 	mysql->ClearTable("crossingstream", Msg);
+	mysql->ClearTable("phasestream", Msg); 
 }
 
 

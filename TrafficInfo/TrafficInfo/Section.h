@@ -28,6 +28,7 @@ public:
 
 	int writeDataToSql(VspdCToMySQL* mysql);
 
+	static vector<Section> allSection;
 };
 
 

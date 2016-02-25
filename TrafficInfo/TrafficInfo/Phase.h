@@ -1,3 +1,4 @@
+/*********************相位表*****************************/
 #ifndef __PHASE_H__
 #define __PHASE_H__
 
@@ -19,6 +20,8 @@ public:
 
 	//根据制定的控制方案，获取每一个相位的绿灯，红灯时间
 	static vector<vector<string>>  getSingalTimeByIndex(VspdCToMySQL* mysql, int plan_index);
+
+	static vector<Phase> allPhase;
 };
 
 #endif

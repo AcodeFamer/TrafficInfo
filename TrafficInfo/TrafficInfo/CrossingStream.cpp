@@ -1,6 +1,9 @@
 #include"stdafx.h"
 #include "CrossingStream.h"
 
+
+vector<CrossingStream> CrossingStream::allCrossingStream;
+
 CrossingStream::CrossingStream()
 {
 

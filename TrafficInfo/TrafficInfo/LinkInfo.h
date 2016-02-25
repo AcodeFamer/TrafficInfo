@@ -1,5 +1,8 @@
+/**********************连接明细**********************/
 #ifndef __LINKINFO_H__
 #define __LINKINFO_H__
+
+
 
 #include "utility.h"
 #include "VspdCToMySQL.h"
@@ -24,6 +27,8 @@ public:
 
 	//根据LINK指针在数据库中查询对应的编号和所属路段信息,返回对应编号
 	static int getLinkInfo(VspdCToMySQL* msql, int flag, LINK* pLink, string& road_id);
+
+	static vector<LinkInfo> allLinkInfo;
 };
 
 

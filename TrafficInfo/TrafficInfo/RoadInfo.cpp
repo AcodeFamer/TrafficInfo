@@ -3,6 +3,8 @@
 
 
 vector<string> RoadInfo::allRoadLinkId;
+
+vector<RoadInfo> RoadInfo::allRoadInfo;
 RoadInfo::RoadInfo()
 {
 
@@ -69,3 +71,4 @@ int RoadInfo::IsRoadLinkIdExist(string road_link_id)
 	}
 	return 0;
 }
+

@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include "Section.h"
 
+
+vector<Section> Section::allSection;
+
+
 Section::Section()
 {
 }
@@ -52,3 +56,5 @@ int Section::writeDataToSql(VspdCToMySQL* mysql)
 	else
 		return 1;
 }
+
+

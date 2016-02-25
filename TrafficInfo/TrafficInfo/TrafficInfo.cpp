@@ -4,6 +4,7 @@
 
 string TrafficInfo::simu_time="";
 int TrafficInfo::SimIndex;
+
 TrafficInfo::TrafficInfo()
 {
 

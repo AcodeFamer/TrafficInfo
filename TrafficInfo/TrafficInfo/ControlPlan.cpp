@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "ControlPlan.h"
 
+vector<ControlPlan> ControlPlan::allControlPlan;
+
 
 ControlPlan::ControlPlan()
 {
@@ -56,9 +58,9 @@ int ControlPlan::writeDataToSql(VspdCToMySQL *mysql)
 vector<vector<string>> ControlPlan::getPlanUpdateIndex(VspdCToMySQL* mysql)
 {
 	//查询控制方案表,出现更新的控制方案编号
-	char* SQL = "select PlanIndex,CrossingId,Period from controlplan where IsUpdate='1';";
+	char* SQL = "select PlanIndex,CrossingId,Period,PhaseOffset from controlplan where IsUpdate='1';";
 	string msg;
-	vector<vector<string>> res=mysql->SelectData(SQL, 3,msg);
+	vector<vector<string>> res=mysql->SelectData(SQL, 4,msg);
 
 	
 	//读取完成后清除标志位

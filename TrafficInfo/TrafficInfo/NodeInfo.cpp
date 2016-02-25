@@ -2,6 +2,9 @@
 #include "NodeInfo.h"
 
 
+vector<NodeInfo> NodeInfo::allNodeInfo;
+
+
 NodeInfo::NodeInfo()
 {
 

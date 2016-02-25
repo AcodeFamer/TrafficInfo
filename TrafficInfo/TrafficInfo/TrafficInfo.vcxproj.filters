@@ -57,6 +57,12 @@
     <Filter Include="源码\PhaseStream">
       <UniqueIdentifier>{e7100245-84bd-475e-8dd0-9886bb47e8a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源码\tinyxml">
+      <UniqueIdentifier>{e0646dd1-320b-4764-b871-02b4487efb39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源码\config">
+      <UniqueIdentifier>{4d65fcc5-1661-4070-940b-1b879c0b548f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Detector.cpp">
@@ -110,6 +116,21 @@
     <ClCompile Include="PhaseStream.cpp">
       <Filter>源码\PhaseStream</Filter>
     </ClCompile>
+    <ClCompile Include="tinyxml\tinystr.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxml.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlerror.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyxml\tinyxmlparser.cpp">
+      <Filter>源码\tinyxml</Filter>
+    </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>源码\config</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Detector.h">
@@ -160,8 +181,22 @@
     <ClInclude Include="PhaseStream.h">
       <Filter>源码\PhaseStream</Filter>
     </ClInclude>
+    <ClInclude Include="tinyxml\tinystr.h">
+      <Filter>源码\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyxml\tinyxml.h">
+      <Filter>源码\tinyxml</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>源码\config</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config.xml">
+      <Filter>资源文件</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

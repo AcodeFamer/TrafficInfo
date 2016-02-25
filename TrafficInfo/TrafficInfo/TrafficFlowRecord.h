@@ -19,6 +19,8 @@ public:
 	~TrafficFlowRecord();
 
 	int writeDataToSql(VspdCToMySQL* mysql);
+
+	static vector<TrafficFlowRecord> allTrafficFlowRecord;
 };
 
 

@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "LinkInfo.h"
 
+
+vector<LinkInfo> LinkInfo::allLinkInfo;
+
 LinkInfo::LinkInfo()
 {
 

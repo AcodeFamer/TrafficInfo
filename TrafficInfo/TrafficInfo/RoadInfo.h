@@ -1,4 +1,4 @@
-/*****************璺淇℃伅绫?***************/
+/*****************路段信息表***************/
 
 #ifndef __RoadInfo_H__
 #define __RoadInfo_H__
@@ -10,15 +10,15 @@ using namespace std;
 
 class RoadInfo
 {
-    //璺ID
+    
 	string RoadId;
-    //璺鍚嶇О
+    
 	string RoadName;
-    //璧峰鑺傜偣
+   
     string StartNode;
-    //缁撴潫鑺傜偣
+   
     string EndNode;
-    //璺濈
+    
     float Distance;
     
 
@@ -33,6 +33,8 @@ public:
 	static vector<string> allRoadLinkId;
 	//判断新加入的路段id是否已经存在
 	static int IsRoadLinkIdExist(string road_link_id);
+
+	static vector<RoadInfo> allRoadInfo;
 };
 
 

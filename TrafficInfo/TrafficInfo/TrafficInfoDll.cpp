@@ -1,8 +1,7 @@
 ﻿// TrafficInfo.cpp : 定义 DLL 应用程序的入口点。
 //
-
 #include "stdafx.h"
-
+#include "config.h"
 
 #ifdef _MANAGED
 #pragma managed(push, off)
@@ -22,62 +21,52 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 //数据库信息
 VspdCToMySQL* mysql = new VspdCToMySQL;
+//定义数据统计时间（5秒）
 #define STATISTIC_STEP 5
+//数据统计累加变量
 int statistic_count = 0;
 
-
-int sim_state = 0;  //仿真状态 0：未开始 1：运行  2：暂停  3：结束
+//当前路网仿真状态 0：未开始 1：运行  2：暂停  3：结束
+int sim_state = 0;  
 
 //声明定时器1的回调函数
-void CALLBACK TimerProc(HWND   hWnd, UINT   nMsg, UINT   nTimerid, DWORD   dwTime);
-//声明定时器2的回调函数
-void CALLBACK TimerProc2(HWND   hWnd, UINT   nMsg, UINT   nTimerid, DWORD   dwTime);
+void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime);
 
-
-
-struct SIGPRI_s
-{
-	char* inlink;
-	char* outlink;
-	int	  priority;
-};
 
 
 
 /*********************************************路网打开前**********************************************/
 void qpx_NET_preOpen()
 {
-	char* host="localhost";
-	char* user="root";
-	char* port ="3306";
-	char* passwd="root";
-	char* dbname="traffic_info"; 
-	char* charset = "GBK";
+	//获取数据库连接配置文件
+	map<string, string> db_config = getDatabaseConfig();
+	if (db_config["SuccessFlag"] == "fail")
+	{
+		qps_GUI_printf("database config get fail");
+	}
 	string Msg ;
-
 	//连接数据库
-	if(mysql->ConnMySQL(host,port,dbname,user,passwd,charset,Msg) != 0)
+	if (mysql->ConnMySQL(db_config["host"], str2int(db_config["port"]), db_config["dbname"], db_config["user"], db_config["passwd"], db_config["cahrset"], Msg) != 0)
 	{
 		qps_GUI_printf("database connect fail");
+		MessageBox(NULL, "数据库连接失败,请更改设置","" , MB_OK);
 	}
 	else
 	{
 		qps_GUI_printf("database connect success");
+		//MessageBox(NULL, "数据库连接成功", "", MB_OK);
 	}
 }
 /*********************************************路网开启后**********************************************/
 void qpx_NET_postOpen()
 {
-
-	TrafficInfo::simu_time = "00:00:00";
 	//路网名称
 	char* net_file_path=qpg_NET_dataPath();
 
 	//从路径中取得名字(即为路网Id)
 	string netName=getFileName(net_file_path);
 
-	
-	qps_GUI_printf("road net name: %s",netName.c_str());
+	qps_GUI_printf("RoadNet Name: %s",netName.c_str());
 
 	//获取节点，路段，子区，检测器数量信息
 	//node数
@@ -93,7 +82,7 @@ void qpx_NET_postOpen()
 	qps_GUI_printf("nodeNum=%d,linkNum=%d,zoneNum=%d,detectorNum=%d", RoadNetInfo::nodeNum, RoadNetInfo::linkNum, RoadNetInfo::zoneNum, RoadNetInfo::detectorNum);
 
 	
-	//获取检测器指针和检测器id
+	//获取路网中所有检测器指针和检测器id
 	RoadNetInfo::getAllDetectorPointer(RoadNetInfo::detectorNum);
 	RoadNetInfo::getAllDetectorId(RoadNetInfo::detectorNum);
 
@@ -114,7 +103,7 @@ void qpx_NET_postOpen()
 	//不是新路网
 	else
 	{
-		
+		//若路网修改过
 		if (RoadNetInfo::IsRoadNetModified(mysql, netName) == 1)
 		{
 			qps_GUI_printf("road net has modified");
@@ -145,7 +134,7 @@ void qpx_NET_postOpen()
 	}
 
 
-
+	//初始化相关统计变量（车流量，速度，占有时间）
 	RoadNetInfo::initCountLoop();
 	RoadNetInfo::initCountDetector();
 
@@ -153,12 +142,24 @@ void qpx_NET_postOpen()
 	string Msg;
 	mysql->ClearTable("trafficinfo", Msg);
 	
+	
+
+
+	//设置所有的信号化的路口信号为变化周期
+	for (int node_i = 0; node_i < RoadNetInfo::nodeNum; node_i++)
+	{
+		NODE* pNode = qpg_NET_nodeByIndex(node_i + 1);
+		if (qpg_NDE_signalised(pNode))
+		{
+			string node_id = qpg_NDE_name(pNode);
+            qps_SIG_action(pNode, 1, 0, API_ACTION_VARIABLE, API_ACTIONMODE_SET, 1);
+			//存储到map中
+			RoadNetInfo::AllSignalisedNode[node_id] = pNode;
+		}
+	}
+
+
 	qps_GUI_printf("wait for simulation start");
-
-	//开启路网后新增一条仿真记录
-	//SimRecord sm(netName,"", 1.00, STATISTIC_STEP,0,0,"","","",0,"","","" );
-	//sm.writeDataToSql(mysql);
-
 
 	//初始化OD矩阵
 	RoadNetInfo::initDemandMatrix();
@@ -166,8 +167,11 @@ void qpx_NET_postOpen()
 	//开启1s的定时器
 	SetTimer(NULL, 1, 1000, TimerProc);
 
+	//单独启动parmics时使用，通过数据库控制仿真启动时可以注释掉
+	TrafficInfo::simu_time = "00:00:00";
 }
 
+//仿真重启标志位
 int restart_flag = 0;
 
 //定时器的回调函数，用于实现定时查看仿真是否开启，暂停，停止，以及配置是否修改
@@ -176,8 +180,11 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 	//查看仿真记录表，仿真是否暂停或者运行
 	if (sim_state == 0 && SimRecord::isSimStart(mysql) > 0)  //仿真第一次开始
 	{
+		//仿真开始，初始化仿真时间
 		TrafficInfo::simu_time = "00:00:00";
+		//设置仿真状态
 		sim_state = 1;
+
 		/*获取当前系统时间
 		CTime time = CTime::GetCurrentTime(); //构造CTime对象  
 		string current_datetime = datetime2str(time);//CTime对象转换为字符串
@@ -186,28 +193,38 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 
 		//从仿真记录表中读取最后一条记录中的仿真编号
 		TrafficInfo::SimIndex = SimRecord::isSimStart(mysql);
+
 		qps_GUI_printf("running,sim_state=%d\n", sim_state);
+		//开启仿真
 		qps_GUI_simRunning(PTRUE);
 
 		
 
 	}
-	else if (sim_state == 1 && SimRecord::isSimPause(mysql) == true)  //仿真暂停
+    //仿真正在运行时，用户控制仿真暂停
+	else if (sim_state == 1 && SimRecord::isSimPause(mysql) == true)  
 	{
+		//设置仿真状态
 		sim_state = 2;
+
 		qps_GUI_printf("paused,sim_state=%d\n", sim_state);
+		//暂停仿真
 		qps_GUI_simRunning(PFALSE);
 
 		
 	}
+	//仿真暂停时用户再次启动仿真
 	else if (sim_state == 2 && SimRecord::isSimStart(mysql) > 0)  //暂停->继续运行
 	{
+		//设置仿真状态
 		sim_state = 1;
+		//开启仿真
 		qps_GUI_simRunning(PTRUE);
 
 		qps_GUI_printf("running,sim_state=%d\n", sim_state);
 	}
-	
+
+	//仿真正在运行时结束仿真（需要先重启仿真然后暂停）
 	else if (SimRecord::isSimStop(mysql) == 1 && sim_state == 1 )// 运行时结束仿真
 	{
 		sim_state = 3;  //标志位为3结束仿真
@@ -216,7 +233,7 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 		qps_GUI_printf("running stop sim,sim_state=%d\n", sim_state);
 		restart_flag = 1;//仿真重启完成后，设置重启标志位为1
 	}
-	//暂停时结束仿真（需要先将程序启动然后restart）
+	//暂停时结束仿真（需要先将程序启动 然后重启仿真暂停）
 	else if (SimRecord::isSimStop(mysql) == 1 && sim_state == 2)  
 	{
 		sim_state = 1;
@@ -243,13 +260,16 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 
 		for (size_t plan_i = 0; plan_i < update_plan_info.size(); plan_i++)
 		{
-			//从获取控制方案信息中提取方案编号 周期 路口id
+			//从获取控制方案信息中提取方案编号 周期 路口id 相位差
 
 			int plan_index = str2int(update_plan_info[plan_i][0]);
 			string crossing_id = update_plan_info[plan_i][1];
 		    float period = atof(update_plan_info[plan_i][2].c_str());
+			float phase_offset = atof(update_plan_info[plan_i][3].c_str());
+			//设置相位差
+			qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], 1, 0, API_ACTION_OFFSET, API_ACTIONMODE_SET, phase_offset);
 
-			//对每一个控制方案编号，获取对应所有相位的信号灯时间
+			//对每一个控制方案编号，获取对应所有相位的信号灯时间和是否更新标志
 			vector<vector<string>> update_phase_info = Phase::getSingalTimeByIndex(mysql,plan_index);
 			float time_sum=0.0;
 			qps_GUI_printf("plan_index=%d", plan_index);
@@ -266,9 +286,14 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 			{
 				for (size_t phase_i = 0; phase_i < update_phase_info.size(); phase_i++)
 				{
+					int is_update = str2int(update_phase_info[phase_i][3]);
 					//由于设置的绿灯时间对应黄灯和绿灯的总时间，所以在设置时要加上系统的黄灯时间
-					qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_GREEN, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][0].c_str())+3);
-					qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_RED, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][2].c_str()));
+					if (is_update==1)  //该相位信号灯时间更新
+					{
+						qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_GREEN, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][0].c_str()) + 3);
+						qps_SIG_action(RoadNetInfo::AllSignalisedNode[crossing_id], phase_i + 1, 0, API_ACTION_STORED_RED, API_ACTIONMODE_SET, atof(update_phase_info[phase_i][2].c_str()));
+					}
+					
 				}
 			}
 
@@ -355,19 +380,17 @@ void qpx_NET_second(void)
 
 
 
-    //每次到达设定时间间隔时
+	//每次到达设定时间间隔时
 	statistic_count++;
 	if (statistic_count == STATISTIC_STEP)
 	{
 		statistic_count = 0;
 		int date = qpg_CLK_date();
 		string simu_date = num2date(date);
-
+		
 		TrafficInfo::simu_time = updateTime(TrafficInfo::simu_time, STATISTIC_STEP);
-
-		//获取占有率
-		float occupancy = RoadNetInfo::occupancyEveryLoopDuration[89][1];
-
+       
+        
 		for (int i = 0; i < RoadNetInfo::detectorNum; i++)
 		{
 			int sum = 0;
@@ -378,7 +401,7 @@ void qpx_NET_second(void)
 				RoadNetInfo::countEveryLoopDiff[i][j] = count - RoadNetInfo::countEveryLoopDuration[i][j];
 
 
-				
+
 				if (RoadNetInfo::countEveryLoopDiff[i][j] == 0)
 				{
 					RoadNetInfo::velocityEveryLoopDuration[i][j] = 0.00;
@@ -387,8 +410,8 @@ void qpx_NET_second(void)
 				{
 					RoadNetInfo::velocityEveryLoopDuration[i][j] = RoadNetInfo::velocityEveryLoopDuration[i][j] / RoadNetInfo::countEveryLoopDiff[i][j];
 				}
-				
-				
+
+
 				//更新累计量
 				RoadNetInfo::countEveryLoopDuration[i][j] = count;
 				//计算每一个加测器的车辆通过数(即该车道)
@@ -404,28 +427,18 @@ void qpx_NET_second(void)
 
 			RoadNetInfo::countEveryDetector[i] = sum;
 		}
+		
 
-		//该时间段内通过的车辆数
-		int count = RoadNetInfo::countEveryLoopDiff[89][1];
-		//获取平均速度
-		float speed_smooth = RoadNetInfo::velocityEveryLoopDuration[89][1];
-		
-		int flag = RoadNetInfo::isOccupiedEveryLoop[89][1];
-		
-		CString mes;
-		mes.Format("count=%d,occ=%f,speed=%f,flag=%d",count, occupancy,speed_smooth,flag);
-		//MessageBox(NULL, mes, "", MB_OK);
-		
-        //写数据库
+		//写数据库
 
 		//统计时间间隔内的数据写入数据库
 		TrafficInfo::writeAllDataToSql(mysql);
-			
+
 		for (int i = 0; i < RoadNetInfo::detectorNum; i++)
 		{
 			for (int j = 0; j < RoadNetInfo::loopNumArray[i]; j++)
 			{
-				
+
 				//清空occ的累计值
 				RoadNetInfo::occupancyEveryLoopDuration[i][j] = 0;
 				//清空velocity累计值
@@ -433,10 +446,9 @@ void qpx_NET_second(void)
 				//RoadNetInfo::isOccupiedEveryLoop[i][j] = 0; //清标志位
 			}
 		}
-	
+
 	}
 }
-
 
 
 
