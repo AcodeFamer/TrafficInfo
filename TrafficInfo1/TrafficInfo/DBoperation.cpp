@@ -199,6 +199,7 @@ void DBoperation::clearTable()
 	mysql->ClearTable("crossingstream", Msg);
 	mysql->ClearTable("controlstate", Msg);
 	//mysql->ClearTable("phasestream", Msg);
+	MessageBox(NULL, "clear", "", MB_OK);
 }
 
 bool DBoperation::IsRoadNetModified(string net_name, int nodeNum, int linkNum, int zoneNum)
@@ -208,6 +209,7 @@ bool DBoperation::IsRoadNetModified(string net_name, int nodeNum, int linkNum, i
 	SQL = SQL + "'" + net_name + "'";
 	string Msg;
 	vector<vector<string>>  res = mysql->SelectData(SQL.c_str(), 7, Msg);
+	string road_net_id = res[0][1];
 	int node_num = str2int(res[0][3]);
 	int link_num = str2int(res[0][4]);
 	int subzone_num = str2int(res[0][5]);

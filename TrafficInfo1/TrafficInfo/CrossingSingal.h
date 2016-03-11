@@ -5,6 +5,15 @@
 #include "VspdCToMySQL.h"
 using namespace std;
 
+//控制方案类型
+enum
+{
+	PLANTYPE_RED = 0,               //红灯
+	PLANTYPE_YELLOW,                //黄灯
+	PLANTYPE_FIX_PEROID,            //固定周期
+	PLANTYPE_ACTUAL_CONTROL,        //感应控制
+	PLANTYPE_ONLINE_CONTROL,        //在线控制
+};
 
 struct SingalInfo
 {
@@ -31,7 +40,8 @@ public:
 	int isSingal;
 	//路口的仿真否开启
 	static int IsStart;
-
+	//该路口控制方案的类型
+	int planType;
 private:
 	//当前正在执行的信号控制方案信息
 	SingalInfo singal_info;
@@ -41,8 +51,8 @@ private:
 	int phaseIndex;
 	//该路口当前相位执行到第几秒（仿真运行时）
 	int second;
-	//是否是第一个周期
-	int isFirstPeroid;
+	//是否是第一个相位(固定周期的控制方案)
+	int isFirstPhase;
 	//流入LINK id(按车流编号,从下标1开始)
 	vector<string> linkInId;
 	vector<string> linkOutId;
@@ -52,13 +62,22 @@ private:
 	//该路口当前车流的权限
 	vector<string> curStreamPri;
 private:
-	 VspdCToMySQL* mysql;
+	static VspdCToMySQL* mysql;
 public:
-	CrossingSingal(string crossing_id, VspdCToMySQL* my_sql, vector<string> stream_pri,vector<string> link_in_id, vector<string> link_out_id);
+	CrossingSingal(string crossing_id, vector<string> stream_pri,vector<string> link_in_id, vector<string> link_out_id);
 	~CrossingSingal();
 
+	//获取当前正在执行的信号信息
+	SingalInfo getSingalInfo();
 	//从nodeinfo表中获取该路口id对应是否信号化(没有查到返回-1)
 	int isCrossingSinglised();
+	//设置当前控制方案编号
+	void setPlanIndex(int plan_index);
+	//设置路口是否信号化
+	void setCrossingSingalised(int is_singlised);
+
+	//从crossingstream中查询priority
+	vector<vector<string>> getCrossingstreamInfo();
 
 	//从controlplan中获取Active的控制方案信息（最多是每个路口节点有一个plan是active的）
 	vector<string> getActivePlanInfo();
@@ -76,18 +95,28 @@ public:
 	int getPlanIndex();
 	//执行当期前控制方案
 	void execute_singal_control();
-	
+	//设置该路口的某条车流编号权限车流权限
 	void setStreamPriority(int stream_index, string pri);
 
+	//设置控制方案类型
+	void setPlanType(int type);
+	//初始化controlstate所有车流权限为Major
+	static void initControlState();
+	//初始化设置mysql指针
+	static void setMysql(VspdCToMySQL* my_sql);
+	//当控制状态变化时,更新控制状态
+	void  updateControlState(int stream_index, string pri);
 
+	//清空IsUpdate标志位
+	static void clearIsUpdate(string tablename);
 private:
     //从phasestream表中获取所有相位的所有车流权限情况(查询条件：当前控制方案编号，该路口）
 	void getPhaseStreamPri();
-	//当控制状态变化时,更新控制状态
-	void  updateControlState(int stream_index,string pri);
 
 	//清空IsUpdate标志
 	void clearIsUpdate();
+
+	
 };
 
 

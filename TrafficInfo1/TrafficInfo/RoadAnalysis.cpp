@@ -143,9 +143,26 @@ void RoadAnalysis::analyseNode()
 						//相应的进出link指针
 						LINK* link_in = qpg_NDE_linkEntry(allNodePointer[i], in_index + 1);
 						LINK* link_out = qpg_NDE_link(allNodePointer[i], out_index + 1);
-						//初始化所有的车流权限为BARRED
-						qps_LNK_priority(link_in, link_out, APIPRI_MAJOR);
-						string priority="BARRED";
+						//加载路网时获取初始化车流权限
+						int pri=qpg_LNK_priority(link_in, link_out);
+						string priority;
+						switch (pri)
+						{
+						case APIPRI_BARRED:
+							priority = "BARRED";
+							break;
+						case APIPRI_MEDIUM:
+							priority = "MEDIUM";
+							break;
+						case APIPRI_MINOR:
+							priority = "MINOR";
+							break;
+						case APIPRI_MAJOR:
+							priority = "MAJOR";
+							break;
+						default:
+							break;
+						}
 						//入link、出link所属的路段id
 					    string road_id_in, road_id_out;
 						//获取入link、出link对应的LinkIndex  和  所属的路段id(road_id_in,road_id_out)

@@ -54,7 +54,8 @@ void qpx_NET_preOpen()
 	//连接数据库
 	if(RA.getDBoperation()->getMySql()->ConnMySQL(host,str2int(port),dbname,user,passwd,charset,Msg) != 0)
 	{
-		qps_GUI_printf("database connect fail");
+		qps_GUI_printf("database connect fail"); 
+		MessageBox(NULL, "database connect fail", "1", MB_OK);
 	}
 	else
 	{
@@ -102,31 +103,22 @@ void qpx_NET_postOpen()
 		//路网信息表中新增一条路网
 		RoadNetInfo road_net_info(netName.c_str(), "", RA.NodeNum, RA.LinkNum, RA.ZoneNum, 0);
 		RA.getDBoperation()->addNewRoadNet(road_net_info);
-	    //清空相应数据表
-		RA.getDBoperation()->clearTable();
-
-		//生成相关表数据
-		RA.updateRoadNetData();
-		
-
 	}
 	//不是新路网
 	else
 	{
-		
 		if (RA.getDBoperation()->IsRoadNetModified(netName,RA.NodeNum,RA.LinkNum,RA.ZoneNum) == 1)
 		{
 			qps_GUI_printf("road net has modified");
 			//更新roadnetinfo表
 			RA.getDBoperation()->updateRoadNetInfoTable(netName,RA.NodeNum,RA.LinkNum,RA.ZoneNum);
-			//清除相关数据表
-			RA.getDBoperation()->clearTable();
-			//生成相关表数据
-			RA.updateRoadNetData();
 		}
 		
 	}
-
+	//清空相应数据表
+	RA.getDBoperation()->clearTable();
+	//解析路网生成相关表数据
+	RA.updateRoadNetData();
 	//*******************************************获取所有线圈指针**************************************************
 	for (int i = 0; i < RA.DetectorNum; i++)
 	{
@@ -154,7 +146,7 @@ void qpx_NET_postOpen()
 	
 	qps_GUI_printf("wait for simulation start");
 
-	//设置所有的路口信号为外部控制
+	/*************************设置所有的路口信号为外部控制,设置每个路口的控制方案**********************************************/
 	for (int node_i = 0; node_i < RA.NodeNum; node_i++)
 	{
 		NODE* pNode = qpg_NET_nodeByIndex(node_i + 1);
@@ -162,7 +154,8 @@ void qpx_NET_postOpen()
 		//若是路口
 		if (node_id.size() == 5 && node_id[3] == '0' && node_id[4] == '0')
 		{
-			qps_NDE_externalController(pNode, Bool::PTRUE);
+			//初始化每个路口的外部信号控制为FALSE
+			qps_NDE_externalController(pNode, Bool::PFALSE);
 			
 			int entry_links = qpg_NDE_entryLinks(pNode);
 			int exit_links = qpg_NDE_exitLinks(pNode);
@@ -188,19 +181,21 @@ void qpx_NET_postOpen()
 			//初始化路口的当前权限pri为MAJOR
 			vector<string> stream_pri(link_in_id.size(), "MAJOR");
 			//创建一个路口信号对象，加入所有路口信号中
-			CrossingSingal cs(node_id, RA.getDBoperation()->getMySql(), stream_pri, link_in_id, link_out_id);
+			CrossingSingal::setMysql(RA.getDBoperation()->getMySql()); //设置数据库对象
+			CrossingSingal cs(node_id, stream_pri, link_in_id, link_out_id);
 			allCrossingSingal.push_back(cs);
 			
 		}
 	}
-	
+	//初始化controlstate为MAJOR
+	CrossingSingal::initControlState();
 
 	//初始化OD矩阵
 	simData.initDemandMatrix(RA.ZoneNum);
 
 	//开启1s的定时器
 	SetTimer(NULL, 1, 1000, TimerProc);
-
+	//初始化仿真编号未启动
 	simData.simState = 0;
 
 	qps_GUI_printf("STEP_NUM=%d", STEP_NUM);
@@ -275,29 +270,83 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 
 	for (size_t cross_i = 0; cross_i < allCrossingSingal.size(); cross_i++)
 	{
-		
-		vector<string> res_plan = allCrossingSingal[cross_i].getActivePlanInfo();//获取控制方案表中该路口active为1的方案信息（PlanIndex,PhaseNum,Period,PhaseOffset）
-		
-		//去相位表中查询相位信息
-		vector<int> all_green_time, all_red_time;
-		allCrossingSingal[cross_i].getPhaseInfo(all_green_time, all_red_time);
-
-		if (res_plan.size() > 0 && all_green_time.size() > 0)
+		//若该路口信号化
+		if (allCrossingSingal[cross_i].isCrossingSinglised() == 1 )
 		{
-			int plan_index = str2int(res_plan[0]);
-			int phase_num = str2int(res_plan[1]);
-			int period = str2int(res_plan[2]);
-			int phase_offset = str2int(res_plan[3]);
-			SingalInfo s = { plan_index, phase_num, period, phase_offset, all_green_time, all_red_time };
+			if (allCrossingSingal[cross_i].isSingal == 0)
+			{
+				allCrossingSingal[cross_i].setCrossingSingalised(1); //设该路口信号化
+				NODE* pNode = qpg_NET_node(const_cast<char*>(allCrossingSingal[cross_i].crossingId.c_str()));
+				qps_NDE_externalController(pNode, PTRUE);//外部控制设置为TRUE，信号化路口
+			}
 
-			
-			//设置下一个周期的控制方案信息（在仿真时更改信号控制有用）
-			allCrossingSingal[cross_i].setSingalInfoNext(s);
 
+			vector<string> res_plan = allCrossingSingal[cross_i].getActivePlanInfo();//获取控制方案表中该路口active为1的方案信息（PlanIndex,PhaseNum,Period,PhaseOffset）
+			//存在active为1的控制方案
+			if (res_plan.size() > 0)
+			{
+				int plan_index = str2int(res_plan[0]);//控制方案编号
+				int phase_num = str2int(res_plan[1]);  //相位数
+				int period = str2int(res_plan[2]);    //周期长
+				int phase_offset = str2int(res_plan[3]); //相位差
+				int plan_type = str2int(res_plan[4]);  //获取控制方案类型
+
+				vector<int> all_green_time, all_red_time;//路口红绿灯配时
+				int is_update = str2int(res_plan[5]);   //phase表是否更新
+				//下面三种情况，需要读取phase表的配时信息
+				//固定周期的控制方案变化变为另一个编号的固定周期控制方案
+				if ((plan_type == PLANTYPE_FIX_PEROID && allCrossingSingal[cross_i].planType == PLANTYPE_FIX_PEROID && allCrossingSingal[cross_i].getSingalInfo().planIndex != plan_index) ||
+					(allCrossingSingal[cross_i].planType != PLANTYPE_FIX_PEROID && plan_type == PLANTYPE_FIX_PEROID) ||    //路口控制方案类型由固定其他类型转为固定周期类型
+					is_update == 1  )   //is_update=1  表示phase表发生更改
+				{
+					allCrossingSingal[cross_i].getPhaseInfo(all_green_time, all_red_time);//获取配时方案
+					SingalInfo s = { plan_index, phase_num, period, phase_offset, all_green_time, all_red_time };
+					allCrossingSingal[cross_i].setSingalInfoNext(s);
+				}
+				/*
+				if (plan_type != PLANTYPE_FIX_PEROID)
+				{
+					SingalInfo s = { plan_index, phase_num, period, phase_offset, all_green_time, all_red_time };
+					allCrossingSingal[cross_i].setSingalInfo(s);
+				}*/
+				allCrossingSingal[cross_i].setPlanType(plan_type); //设置路口的控制方案类型
+				allCrossingSingal[cross_i].setPlanIndex(plan_index);//设置控制方案编号
+			}
+			//该信号化路口没有IsActive=1的控制方案
+			else
+			{
+				//设控制方案编号为-1
+				allCrossingSingal[cross_i].setPlanIndex(-1);
+				//MessageBox(NULL, "no active plan", "", MB_OK);
+			}
 		}
+		//取消信号化
+		else
+		{
+			allCrossingSingal[cross_i].setCrossingSingalised(0); //设该路口未信号化
+			NODE* pNode = qpg_NET_node(const_cast<char*>(allCrossingSingal[cross_i].crossingId.c_str()));
+			qps_NDE_externalController(pNode, PFALSE);//外部控制设置为FALSE，取消信号化
+
+			//查询crossingstream设置车流权限
+			vector<vector<string>> crossingstream_info=allCrossingSingal[cross_i].getCrossingstreamInfo();
+			for (size_t i = 0; i < crossingstream_info.size(); i++)
+			{
+				string pri = crossingstream_info[i][0];  //权限
+				int is_update = str2int(crossingstream_info[i][1]);  //IsUpdate标志位
+				if (is_update == 1)
+				{
+					allCrossingSingal[cross_i].setStreamPriority(i+1, pri);  //更新权限
+					//这里不更新控制状态查询表
+					//allCrossingSingal[cross_i].updateControlState(i, pri); //更新控制状态
+				}
+			}
+		}
+		
+		
 		//qps_GUI_printf("planIndex=%d", allCrossingSingal[cross_i].getPlanIndex());
 	}
-
+	CrossingSingal::clearIsUpdate("controlplan");
+	CrossingSingal::clearIsUpdate("crossingstream");
 }
 
 
@@ -311,25 +360,6 @@ void qpx_NET_timeStep(void)
 		restart_flag = 0;
 		qps_GUI_simRunning(PFALSE);       //暂停仿真，表示仿真停止
 	}
-
-	//************************执行当前的控制方案******************
-	/*
-	if (step_count == STEP_NUM)
-	{
-		//信号化的节点执行控制方案
-		for (size_t i = 0; i < allCrossingSingal.size(); i++)
-		{
-			if (allCrossingSingal[i].isCrossingSinglised() == 1)
-			{
-				CString mes;
-				mes.Format("i=%d", i);
-				//MessageBox(NULL, mes, "", MB_OK);
-				allCrossingSingal[i].execute_singal_control();
-			}
-		}
-		step_count = 0;
-	}*/
-	step_count++;
 }
 
 
@@ -369,7 +399,7 @@ void qpx_NET_second(void)
 	//信号化的节点执行控制方案
 	for (size_t i = 0; i < allCrossingSingal.size(); i++)
 	{
-		if (allCrossingSingal[i].isCrossingSinglised() == 1)
+		if (allCrossingSingal[i].isSingal == 1)
 		{
 			CString mes;
 			mes.Format("i=%d", i);
@@ -422,7 +452,7 @@ void qpx_NET_second(void)
 		simData.simuTime = updateTime(simData.simuTime, STATISTIC_STEP);
 
 		//获取占有率
-		float occupancy = simData.occupancyEveryLoopDuration[89][1];
+		//float occupancy = simData.occupancyEveryLoopDuration[89][1];
 
 		for (int i = 0; i < RA.DetectorNum; i++)
 		{
@@ -460,19 +490,6 @@ void qpx_NET_second(void)
 
 			simData.countEveryDetector[i] = sum;
 		}
-
-		//该时间段内通过的车辆数
-		int count = simData.countEveryLoopDiff[89][1];
-		//获取平均速度
-		float speed_smooth = simData.velocityEveryLoopDuration[89][1];
-		
-		int flag = simData.isOccupiedEveryLoop[89][1];
-		
-		CString mes;
-		mes.Format("count=%d,occ=%f,speed=%f,flag=%d",count, occupancy,speed_smooth,flag);
-		//MessageBox(NULL, mes, "", MB_OK);
-		
-        //写数据库
 
 		//统计时间间隔内的数据写入数据库
 		simData.writeAllDataToSql(RA.getDBoperation()->getMySql(),RA.DetectorNum);
