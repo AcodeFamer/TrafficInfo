@@ -42,6 +42,8 @@ public:
 	static int IsStart;
 	//该路口控制方案的类型
 	int planType;
+	//更新controlstate的IsUpdate标记
+	int controlStateIsUpdateFlag;
 private:
 	//当前正在执行的信号控制方案信息
 	SingalInfo singal_info;
@@ -105,8 +107,9 @@ public:
 	//初始化设置mysql指针
 	static void setMysql(VspdCToMySQL* my_sql);
 	//当控制状态变化时,更新控制状态
-	void  updateControlState(int stream_index, string pri);
-
+	void updateControlState(int stream_index, string pri);
+	//统一改变该路口的IsUpdate标记
+	void changeIsUpdate();
 	//清空IsUpdate标志位
 	static void clearIsUpdate(string tablename);
 private:

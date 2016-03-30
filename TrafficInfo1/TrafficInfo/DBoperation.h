@@ -5,6 +5,14 @@
 #include <set>
 #include <map>
 
+struct SimState
+{
+	int is_start;
+	int is_pause;
+	int is_finished;
+	int sim_index;
+};
+
 //****************************************数据库操作类*****************************************
 class DBoperation
 {
@@ -40,11 +48,9 @@ public:
 	//根据所属路口查询路口车流表中满足该路口信息的所有流入路段id和流出路段id,返回对应的路口车流编号StreamIndex，获取失败返回0
 	vector<vector<string>> getCrossStreamInfo(string crossing_id);
 
-	//判断仿真是否启动
-	int  isSimStart();
-	//判断仿真是都暂停
-	bool isSimPause();
-	bool isSimStop();
+	//获取仿真记录表最后一条信息
+	SimState getSimRecordInfo();
+
 	//从数据库中获取OD_value值
 	double getODvalue();
 	//查看控制方案表的信息（是否更新，路口id，planIndex）
@@ -54,8 +60,8 @@ public:
 	//按表名字，相应数据，写入数据库表
 	template<class T> void dataWriteToDatabase(string table_name, vector<T>& data);
 
-
 };
+
 
 //模板函数的实现不能放在cpp文件中，否则会出现编译错误
 template<class T>

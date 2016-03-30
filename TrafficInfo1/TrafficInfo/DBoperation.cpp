@@ -6,7 +6,7 @@ DBoperation::DBoperation()
 	//初始化数据库对象
 	mysql = new VspdCToMySQL();
 	
-	//**************************************初始化表名字和表字段
+	//**************************************初始化表名字和表字段****************************************
 
 	//节点信息表
 	string node[] = { "NodeId", "NodeName", "IsSubzone", "IsCrossing", "ConNodeNum", "IsSingal", "IsOneWay", "LinkId" };
@@ -199,7 +199,6 @@ void DBoperation::clearTable()
 	mysql->ClearTable("crossingstream", Msg);
 	mysql->ClearTable("controlstate", Msg);
 	//mysql->ClearTable("phasestream", Msg);
-	MessageBox(NULL, "clear", "", MB_OK);
 }
 
 bool DBoperation::IsRoadNetModified(string net_name, int nodeNum, int linkNum, int zoneNum)
@@ -266,53 +265,23 @@ vector<vector<string>> DBoperation::getCrossStreamInfo(string crossing_id)
 	return res_crossingstream;
 }
 
-int DBoperation::isSimStart()
+SimState DBoperation::getSimRecordInfo()
 {
-	char* SQL = "select * from simrecord where SimIndex=(select max(SimIndex) from simrecord);";
+	char* SQL = "select SimIndex,IsStart,IsPause,IsFinished from simrecord where SimIndex=(select max(SimIndex) from simrecord);";
 	string Msg;
-	vector<vector<string>> res = mysql->SelectData(SQL, 15, Msg);
-	if (res.size() != 0)
+	vector<vector<string>> res = mysql->SelectData(SQL, 4, Msg);
+
+	SimState sm = { 0, 0, 0, 0 };
+	if (res.size() > 0)
 	{
-		int is_start = str2int(res[0][6]);
-		if (is_start == 1)//若仿真启动，返回仿真编号
-			return str2int(res[0][0]);
-		else
-			return 0;
+		sm.is_start = str2int(res[0][1]);
+		sm.is_pause = str2int(res[0][2]);
+		sm.is_finished = str2int(res[0][3]);
+		sm.sim_index = str2int(res[0][0]);
 	}
-	else return 0;
+	return sm;
 }
 
-bool DBoperation::isSimPause()
-{
-	char* SQL = "select * from simrecord where SimIndex=(select max(SimIndex) from simrecord);";
-	string Msg;
-	vector<vector<string>> res = mysql->SelectData(SQL, 15, Msg);
-	if (res.size() != 0)
-	{
-		int is_pause = str2int(res[0][7]);
-		if (is_pause == 1)
-			return true;
-		else
-			return false;
-	}
-	return false;
-}
-
-bool DBoperation::isSimStop()
-{
-	char* SQL = "select * from simrecord where SimIndex=(select max(SimIndex) from simrecord);";
-	string Msg;
-	vector<vector<string>> res = mysql->SelectData(SQL, 15, Msg);
-	if (res.size() != 0)
-	{
-		int is_stop = str2int(res[0][11]);
-		if (is_stop == 1)
-			return true;
-		else
-			return false;
-	}
-	return false;
-}
 
 double DBoperation::getODvalue()
 {
@@ -340,7 +309,6 @@ vector<vector<string>> DBoperation::getSingalTimeByIndex(int plan_index)
 	mysql->UpdateData(SQL_clear.c_str(), Msg);
 	return res;
 }
-
 
 
 vector<vector<string>> DBoperation::getPlanUpdateIndex()

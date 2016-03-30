@@ -28,6 +28,8 @@ CrossingSingal::CrossingSingal(string crossing_id, vector<string> stream_pri, ve
 	planType = -1;
 	//初始化所有车流为MAJOR
 	curStreamPri = vector<string>(link_in_id.size()+1, "MAJOR");
+	//controlstate IsUpdate标记  0 1变化
+	controlStateIsUpdateFlag = 0;
 }
 
 CrossingSingal::~CrossingSingal()
@@ -139,6 +141,7 @@ void CrossingSingal::execute_singal_control()
 	if (planType == PLANTYPE_RED)
 	{
 		isFirstPhase = 1;//设置在切换固定周期时，从第一个相位开始执行
+		int is_pri_update = 0;  //是否有pri变化
 		for (int index = 1; index <= stream_num; index++)
 		{
 			if (curStreamPri[index] != "BARRED")
@@ -146,16 +149,19 @@ void CrossingSingal::execute_singal_control()
 				setStreamPriority(index, "BARRED");
 				curStreamPri[index] = "BARRED";
 				updateControlState(index, "BARRED");
+				is_pri_update = 1;
 			}
+		}
+		if (is_pri_update == 1)
+		{
+			changeIsUpdate();
 		}
 	}
 	//全部黄灯闪烁
 	else if (planType == PLANTYPE_YELLOW)
 	{
 		isFirstPhase = 1; //设置在切换固定周期时，从第一个相位开始执行
-		CString mes;
-		mes.Format("%d,%d,%d", curStreamPri.size(),linkInId.size(),linkOutId.size());
-		MessageBox(NULL, mes, "", MB_OK);
+		int is_pri_update = 0;  //是否有pri变化
 		for (int index = 1; index <= stream_num; index++)
 		{
 			if (curStreamPri[index] != "MINOR")
@@ -163,7 +169,12 @@ void CrossingSingal::execute_singal_control()
 				setStreamPriority(index, "MINOR");
 				curStreamPri[index] = "MINOR";
 				updateControlState(index, "MINOR");
+				is_pri_update = 1;
 			}
+		}
+		if (is_pri_update == 1)
+		{
+			changeIsUpdate();
 		}
 	}
 	//在线控制，读取到权限就改
@@ -172,6 +183,7 @@ void CrossingSingal::execute_singal_control()
 		isFirstPhase = 1;//设置在切换固定周期时，从一个相位开始执行
 		int stream_num = linkInId.size() - 1;//该路口车流 数量
 		getPhaseStreamPri();//获取车流权限情况
+		int is_pri_update = 0;  //是否有pri变化
 		for (int index = 1; index <= stream_num; index++)
 		{
 			if (curStreamPri[index] != phaseStreamPri[1][index])   //此时只读取第一个周期
@@ -179,7 +191,12 @@ void CrossingSingal::execute_singal_control()
 				setStreamPriority(index, phaseStreamPri[1][index]);
 				curStreamPri[index] = phaseStreamPri[1][index];
 				updateControlState(index, phaseStreamPri[1][index]);
+				is_pri_update = 1;
 			}
+		}
+		if (is_pri_update == 1)
+		{
+			changeIsUpdate();
 		}
 	}
 	//固定周期
@@ -188,9 +205,9 @@ void CrossingSingal::execute_singal_control()
 		if (isFirstPhase == 0)
 		{
 			CString mes;
-			mes.Format("second=%d,phaseIndex=%d,greenTime=%d,redTime=%d", second, phaseIndex, singal_info.greenTime[phaseIndex], singal_info.redTime[phaseIndex]);
-			mes.Format("second=%d,phaseIndex=%d,greenTime.size=%d,redTime.size=%d", second, phaseIndex, singal_info.greenTime.size(), singal_info.redTime.size());
-			MessageBox(NULL, mes, "", MB_OK);
+			//mes.Format("second=%d,phaseIndex=%d,greenTime=%d,redTime=%d", second, phaseIndex, singal_info.greenTime[phaseIndex], singal_info.redTime[phaseIndex]);
+			//mes.Format("second=%d,phaseIndex=%d,greenTime.size=%d,redTime.size=%d", second, phaseIndex, singal_info.greenTime.size(), singal_info.redTime.size());
+			//MessageBox(NULL, mes, "", MB_OK);
 			
 		}
 
@@ -209,7 +226,7 @@ void CrossingSingal::execute_singal_control()
 				setStreamPriority(index, phaseStreamPri[1][index]); //设置车流权限
 				updateControlState(index, phaseStreamPri[1][index]);//更新控制状态
 			}
-			MessageBox(NULL, "first peroid", "", MB_OK);
+			changeIsUpdate();
 		}
 
 		else
@@ -217,8 +234,9 @@ void CrossingSingal::execute_singal_control()
 			/********************判断是否需要开启黄灯****************/
 			if (second == singal_info.greenTime[phaseIndex] - 3) //判断是否需要开启黄灯
 			{
-				clearIsUpdate();
+				//clearIsUpdate();
 				//遍历车流
+				int is_pri_update = 0;  //是否有pri变化
 				for (int index = 1; index <= stream_num; index++)
 				{
 					if (phaseIndex < singal_info.phaseNum)
@@ -229,23 +247,30 @@ void CrossingSingal::execute_singal_control()
 							setStreamPriority(index, "MINOR");
 							curStreamPri[index] = "MINOR";
 							updateControlState(index, "MINOR");
-							//MessageBox(NULL, "set yellow 1", "", MB_OK);
+							is_pri_update = 1;
+						}
+						if (is_pri_update == 1)
+						{
+							changeIsUpdate();
 						}
 					}
 					else
 					{
 						singal_info.planIndex = singal_info_next.planIndex;  //这里只修改控制方案编号，没有修改正在执行的方案相位时间配置
-						getPhaseStreamPri();//获取到的是下一个周期的权限，
+						getPhaseStreamPri();//获取到的是下一个周期的权限
 						if (curStreamPri[index] == "MAJOR" && phaseStreamPri[1][index] == "BARRED")
 						{
 							//需要开启黄灯
 							setStreamPriority(index, "MINOR");
 							curStreamPri[index] = "MINOR";
 							updateControlState(index, "MINOR");
-							//MessageBox(NULL, "set yellow 2", "", MB_OK);
+							is_pri_update = 1;
 						}
 					}
-
+				}
+				if (is_pri_update == 1)
+				{
+					changeIsUpdate();
 				}
 			}
 			//切换下一个相位
@@ -259,6 +284,7 @@ void CrossingSingal::execute_singal_control()
 				{
 					if (singal_info.greenTime[phaseIndex] == 0)   //下一个相位全是红灯
 					{
+						int is_pri_update = 0;  //是否有pri变化
 						for (int index = 1; index <= stream_num; index++)
 						{
 							if (curStreamPri[index] != "BARRED")
@@ -266,11 +292,17 @@ void CrossingSingal::execute_singal_control()
 								setStreamPriority(index, "BARRED");
 								curStreamPri[index] = "BARRED";
 								updateControlState(index, "BARRED");
+								is_pri_update = 0;
 							}
+						}
+						if (is_pri_update == 1)
+						{
+							changeIsUpdate();
 						}
 					}
 					else
 					{
+						int is_pri_update = 0;  //是否有pri变化
 						for (int index = 1; index <= stream_num; index++)
 						{
 							if (curStreamPri[index] != phaseStreamPri[phaseIndex][index])	
@@ -278,6 +310,11 @@ void CrossingSingal::execute_singal_control()
 								setStreamPriority(index, phaseStreamPri[phaseIndex][index]);
 								curStreamPri[index] = phaseStreamPri[phaseIndex][index];
 								updateControlState(index, phaseStreamPri[phaseIndex][index]);
+								is_pri_update = 1;
+							}
+							if (is_pri_update == 1)
+							{
+								changeIsUpdate();
 							}
 						}
 					}
@@ -289,6 +326,7 @@ void CrossingSingal::execute_singal_control()
 					phaseIndex = 1;
 					singal_info = singal_info_next;
 					getPhaseStreamPri();
+					int is_pri_update = 0;  //是否有pri变化
 					for (int index = 1; index <= stream_num; index++)
 					{
 						if (curStreamPri[index] != phaseStreamPri[phaseIndex][index])
@@ -296,7 +334,12 @@ void CrossingSingal::execute_singal_control()
 							setStreamPriority(index, phaseStreamPri[phaseIndex][index]);
 							curStreamPri[index] = phaseStreamPri[phaseIndex][index];
 							updateControlState(index, phaseStreamPri[phaseIndex][index]);
+							is_pri_update = 1;
 						}
+					}
+					if (is_pri_update == 1)
+					{
+						changeIsUpdate();
 					}
 					return;
 				}
@@ -310,8 +353,6 @@ void CrossingSingal::execute_singal_control()
 	{
 		vector<vector<string>> res=getCrossingstreamInfo();
 		CString mes;
-		mes.Format("size=%d", res.size());
-		MessageBox(NULL, mes, "", MB_OK);
 		for (size_t i = 0; i < res.size(); i++)
 		{
 			string pri = res[i][0];
@@ -357,7 +398,8 @@ void CrossingSingal::getPhaseStreamPri()
 {
 	//获取该路口 当前执行方案的 每一个相位车流权限
 	string SQL = "select StreamState from phasestream where ";
-	SQL = SQL  + "PlanIndex='" + int2str(singal_info.planIndex) + "' AND CrossingId='" + crossingId + "'";
+	SQL = SQL  + "PlanIndex='" + int2str(singal_info.planIndex) + "' AND CrossingId='" + crossingId + "' ORDER BY PhaseId,StreamIndex";
+	qps_GUI_printf("%s", SQL.c_str());
 
 	string Msg;
 	vector<vector<string>> res = mysql->SelectData(SQL.c_str(), 1, Msg);
@@ -381,7 +423,6 @@ void CrossingSingal::getPhaseStreamPri()
 			}
 			phaseStreamPri.push_back(row);
 		}
-		
 	}
 	else
 	{
@@ -397,15 +438,27 @@ void CrossingSingal::getPhaseStreamPri()
 
 void CrossingSingal::updateControlState(int stream_index,string pri)
 {
-	//
+	//原先的方法，更新pri是更新对应的IsUpdate
+	//string SQL = "update controlstate set Priority='" + pri + "',IsUpdate=1 where CrossingId='";
+	//SQL = SQL + crossingId + "' AND StreamIndex='" + int2str(stream_index) + "'";
 	
-
-	string SQL = "update controlstate set Priority='" + pri + "',IsUpdate=1 where CrossingId='";
+	//现在统一更新IsUpdate
+	string SQL = "update controlstate set Priority='" + pri + "' where CrossingId='";
 	SQL = SQL + crossingId + "' AND StreamIndex='" + int2str(stream_index) + "'";
-	
 	string Msg;
 	mysql->UpdateData(SQL.c_str(), Msg);
-	
+}
+
+void CrossingSingal::changeIsUpdate()
+{
+	//变化IsUpdate值
+	controlStateIsUpdateFlag = 1 - controlStateIsUpdateFlag;
+
+	string SQL = "update controlstate set IsUpdate='" + int2str(controlStateIsUpdateFlag) + "' where CrossingId='";
+	SQL = SQL + crossingId + "'";
+	string Msg;
+	mysql->UpdateData(SQL.c_str(), Msg);
+
 }
 
 void CrossingSingal::clearIsUpdate()

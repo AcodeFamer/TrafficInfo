@@ -12,6 +12,7 @@
 #include <mysql.h>
 #include <tchar.h>
 #include <vector>
+#include "tinyXML/tinyxml.h"
 using namespace std;
 
 typedef MYSQL*(__stdcall * MYSQL_INIT)(MYSQL*);
@@ -59,7 +60,11 @@ public:
 	     返回值：0 连接成功  1 失败
 	   */
 	   int ConnMySQL(string host, int port, string Db, string user, string passwd, string charset, string& Msg);
- 
+
+	   /*
+	     通过读取配置文件获取数据库连接参数，调用ConnMySQL(string host, int port, string Db, string user, string passwd, string charset, string& Msg)连接数据库
+	   */
+	   int ConnMySQL();
 	   /*
 	     数据库查询
 	     参数：SQL：SQL语言,Cnum：查询的列字段数 ,Msg：返回的信息

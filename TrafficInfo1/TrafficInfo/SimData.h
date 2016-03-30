@@ -26,6 +26,7 @@ public:
 	//所有线圈的指针
 	vector<vector<LOOP*>> netLoop;
 
+public:  
 
 	//路网中每一个detector的每一个loop通过的车辆数(累积量)(有车通过时就刷新)
 	vector<vector<int>> countEveryLoop;
@@ -48,11 +49,17 @@ public:
 	//统计时段内平均车速
 	vector<vector<float>> velocityEveryLoopDuration;
 
-
 	//路网仿真时的demand矩阵
 	vector<vector<float>> demandMatrix;
 	
-
+public:
+	//对应roadrecord表信息
+	vector<string> allRoadId;
+	vector<vector<LINK*> > linkPointerInRoad;  //对应allRoadId上所有Link指针,
+	vector<vector<int>> laneNum;//该link车道数
+	vector<vector<float> > Roadcount, RoadDelay, RoadDensity, RoadFlow, RoadQueueCount, RoadQueuePCU, RoadQueueLength, RoadSpeed,RoadMaxQueueCount,RoadMaxQueueLength;
+	vector<vector<float> > RoadLength;
+public:
 	//初始化相关变量
 	void initCountLoop(int detectorNum);
 	void initCountDetector(int detectorNum);
@@ -64,6 +71,11 @@ public:
 	void setDemandMatrix(int zoneNum, float od_value);
 
 	//数据写入数据库
-	void writeAllDataToSql(VspdCToMySQL* mysql, int detectorNum);
+	void writeDetectorDataToSql(VspdCToMySQL* mysql, int detectorNum);
+
+	//初始化Road相关数据
+	void initRoadInfo(VspdCToMySQL* mysql);
+
+	void writeRoadDataToSql(VspdCToMySQL* mysql);
 };
 #endif

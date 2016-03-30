@@ -33,6 +33,9 @@
     <Filter Include="源码\CrossingSingal">
       <UniqueIdentifier>{774aae37-e92f-40ad-919e-71d18bc23e98}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源码\tinyXML">
+      <UniqueIdentifier>{3bf49757-2fb8-4cda-b396-7bb9f9cac367}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="utility.cpp">
@@ -58,6 +61,18 @@
     </ClCompile>
     <ClCompile Include="CrossingSingal.cpp">
       <Filter>源码\CrossingSingal</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyXML\tinystr.cpp">
+      <Filter>源码\tinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyXML\tinyxml.cpp">
+      <Filter>源码\tinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyXML\tinyxmlerror.cpp">
+      <Filter>源码\tinyXML</Filter>
+    </ClCompile>
+    <ClCompile Include="tinyXML\tinyxmlparser.cpp">
+      <Filter>源码\tinyXML</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -85,8 +100,19 @@
     <ClInclude Include="CrossingSingal.h">
       <Filter>源码\CrossingSingal</Filter>
     </ClInclude>
+    <ClInclude Include="tinyXML\tinystr.h">
+      <Filter>源码\tinyXML</Filter>
+    </ClInclude>
+    <ClInclude Include="tinyXML\tinyxml.h">
+      <Filter>源码\tinyXML</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="config.xml">
+      <Filter>资源文件</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

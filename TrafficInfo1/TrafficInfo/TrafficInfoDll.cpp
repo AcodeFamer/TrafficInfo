@@ -4,6 +4,10 @@
 #include "stdafx.h"
 #include "CrossingSingal.h"
 #include <vector>
+#include "tinyXML/tinyxml.h"
+
+
+
 #ifdef _MANAGED
 #pragma managed(push, off)
 #endif
@@ -36,37 +40,26 @@ int STEP_NUM = (int)(1 / qpg_CFG_timeStep());
 int step_count = 0;
 
 //声明定时器1的回调函数
-void CALLBACK TimerProc(HWND   hWnd, UINT   nMsg, UINT   nTimerid, DWORD   dwTime);
+void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime);
 
 
 /*********************************************路网打开前**********************************************/
 void qpx_NET_preOpen()
 {
-	
-	string host="localhost";
-	string user="root";
-	string port ="3306";
-	string passwd="root";
-	string dbname="traffic_info1"; 
-	string charset = "GBK";
-	string Msg ;
-
 	//连接数据库
-	if(RA.getDBoperation()->getMySql()->ConnMySQL(host,str2int(port),dbname,user,passwd,charset,Msg) != 0)
+	//if(RA.getDBoperation()->getMySql()->ConnMySQL(host,str2int(port),dbname,user,passwd,charset,Msg) != 0)
+	if (RA.getDBoperation()->getMySql()->ConnMySQL() != 0)
 	{
-		qps_GUI_printf("database connect fail"); 
-		MessageBox(NULL, "database connect fail", "1", MB_OK);
+		MessageBox(NULL, "数据库连接失败，请修改配置文件config.xml", "错误", MB_OK);
 	}
 	else
 	{
-		MessageBox(NULL, "connect sucess", "1", MB_OK);
-		qps_GUI_printf("database connect success");
+		MessageBox(NULL, "数据库连接成功", "通知", MB_OK);
 	}
 }
 /*********************************************路网开启后**********************************************/
 void qpx_NET_postOpen()
 {
-
 	simData.simuTime = "00:00:00";
 	//获取路网路径
 	char* net_file_path=qpg_NET_dataPath();
@@ -99,10 +92,14 @@ void qpx_NET_postOpen()
 	//若为新路网
 	if(RA.isNewRoadNet(netName))
 	{
-		MessageBox(NULL, "New RoadNet", "告知4", MB_OK);
+		MessageBox(NULL, "新路网", "通知", MB_OK);
 		//路网信息表中新增一条路网
 		RoadNetInfo road_net_info(netName.c_str(), "", RA.NodeNum, RA.LinkNum, RA.ZoneNum, 0);
 		RA.getDBoperation()->addNewRoadNet(road_net_info);
+		//清空相应数据表
+		RA.getDBoperation()->clearTable();
+		//解析路网生成相关表数据
+		RA.updateRoadNetData();
 	}
 	//不是新路网
 	else
@@ -112,13 +109,14 @@ void qpx_NET_postOpen()
 			qps_GUI_printf("road net has modified");
 			//更新roadnetinfo表
 			RA.getDBoperation()->updateRoadNetInfoTable(netName,RA.NodeNum,RA.LinkNum,RA.ZoneNum);
+
+			//清空相应数据表
+			RA.getDBoperation()->clearTable();
+			//解析路网生成相关表数据
+			RA.updateRoadNetData();
 		}
-		
 	}
-	//清空相应数据表
-	RA.getDBoperation()->clearTable();
-	//解析路网生成相关表数据
-	RA.updateRoadNetData();
+
 	//*******************************************获取所有线圈指针**************************************************
 	for (int i = 0; i < RA.DetectorNum; i++)
 	{
@@ -135,16 +133,15 @@ void qpx_NET_postOpen()
 		simData.netLoop.push_back(temp);
 	}
 
-
-
+	//初始化仿真数据
 	simData.initCountLoop(RA.DetectorNum);
 	simData.initCountDetector(RA.DetectorNum);
 
 	//清空实时交通信息表
 	string Msg;
-	RA.getDBoperation()->getMySql()->ClearTable("trafficinfo", Msg);
-	
-	qps_GUI_printf("wait for simulation start");
+    RA.getDBoperation()->getMySql()->ClearTable("trafficinfo", Msg);
+	RA.getDBoperation()->getMySql()->ClearTable("roadrecord", Msg);
+
 
 	/*************************设置所有的路口信号为外部控制,设置每个路口的控制方案**********************************************/
 	for (int node_i = 0; node_i < RA.NodeNum; node_i++)
@@ -184,7 +181,6 @@ void qpx_NET_postOpen()
 			CrossingSingal::setMysql(RA.getDBoperation()->getMySql()); //设置数据库对象
 			CrossingSingal cs(node_id, stream_pri, link_in_id, link_out_id);
 			allCrossingSingal.push_back(cs);
-			
 		}
 	}
 	//初始化controlstate为MAJOR
@@ -193,51 +189,51 @@ void qpx_NET_postOpen()
 	//初始化OD矩阵
 	simData.initDemandMatrix(RA.ZoneNum);
 
+	simData.initRoadInfo(RA.getDBoperation()->getMySql());
+
 	//开启1s的定时器
 	SetTimer(NULL, 1, 1000, TimerProc);
-	//初始化仿真编号未启动
+	//初始化仿真编号为0
 	simData.simState = 0;
 
 	qps_GUI_printf("STEP_NUM=%d", STEP_NUM);
+
+	qps_GUI_printf("wait for simulation start");
 }
 
 int restart_flag = 0;
 
+int seq = 0;
 //定时器的回调函数，用于实现仿真控制、信号控制、配置修改
 void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 {
+
 	/*********************************仿真控制**************************************************/
+	//从仿真记录表中读取最后一条仿真记录
+	SimState sm = RA.getDBoperation()->getSimRecordInfo();
 	//查看仿真记录表，仿真是否暂停或者运行
-	if (simData.simState == 0 && RA.getDBoperation()->isSimStart() > 0)  //仿真第一次开始
+	if (sm.is_start == 1 && simData.simState == 0)  //仿真第一次开始
 	{
 		simData.simuTime = "00:00:00";
 		simData.simState = 1;
-		/*获取当前系统时间
-		CTime time = CTime::GetCurrentTime(); //构造CTime对象  
-		string current_datetime = datetime2str(time);//CTime对象转换为字符串
-		MessageBox(NULL, current_datetime.c_str(), "", MB_OK);
-		*/
-
-		//从仿真记录表中读取最后一条记录中的仿真编号
-		simData.simIndex = RA.getDBoperation()->isSimStart();
+		//设置仿真编号
+		simData.simIndex = sm.sim_index;
 		//开启仿真
 		qps_GUI_simRunning(PTRUE);
 	}
-	else if (simData.simState == 1 && RA.getDBoperation()->isSimPause() == true)  //仿真暂停
+	else if (sm.is_pause == 1 && simData.simState == 1)  //仿真暂停
 	{
 		simData.simState = 2;
 		//qps_GUI_printf("paused,sim_state=%d\n", sim_state);
 		qps_GUI_simRunning(PFALSE);	
 	}
-	else if (simData.simState = 2 && RA.getDBoperation()->isSimStart() > 0)  //暂停->继续运行
+	else if (sm.is_start == 1 && simData.simState == 2)  //暂停->继续运行
 	{
 		simData.simState = 1;
 		qps_GUI_simRunning(PTRUE);
-
 	//	qps_GUI_printf("running,sim_state=%d\n", sim_state);
 	}
-	
-	else if (RA.getDBoperation()->isSimStop() == 1 && simData.simState == 1)// 运行时结束仿真
+	else if (sm.is_finished == 1 &&  simData.simState == 1)// 运行时结束仿真
 	{
 		simData.simState = 3;  //标志位为3结束仿真
 		qps_NET_clearVehicles();//清除路面所有车辆
@@ -246,14 +242,13 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 		restart_flag = 1;//仿真重启完成后，设置重启标志位为1
 	}
 	//暂停时结束仿真（需要先将程序启动然后restart）
-	else if (RA.getDBoperation()->isSimStop() == 1 && simData.simState == 2)
+	else if (sm.is_finished == 1 && simData.simState == 2)
 	{
 		simData.simState = 3;
 		//qps_GUI_printf("pause stop sim,sim_state=%d\n", sim_state);
 		qps_GUI_simRunning(PTRUE);
 	}
-
-
+	qps_GUI_printf("size=%d,seq=%d", allCrossingSingal.size(), ++seq);
 	/************************查看仿真记录表的OD值是否改变****************************************/
 
 	float od_value=(float)(RA.getDBoperation()->getODvalue());  //从数据库获取ODvalue
@@ -265,11 +260,12 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 		simData.odValue = od_value;          //保存新的ODvalue
 	}
 
-
+	//qps_GUI_printf("size=%d,seq=%d", allCrossingSingal.size(), ++seq);
 	/*******************************路口信号控制****************************************/
 
 	for (size_t cross_i = 0; cross_i < allCrossingSingal.size(); cross_i++)
 	{
+		//qps_GUI_printf("IsSingal=%d,seq=%d", allCrossingSingal[0].isCrossingSinglised(),++seq);
 		//若该路口信号化
 		if (allCrossingSingal[cross_i].isCrossingSinglised() == 1 )
 		{
@@ -280,8 +276,8 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 				qps_NDE_externalController(pNode, PTRUE);//外部控制设置为TRUE，信号化路口
 			}
 
-
 			vector<string> res_plan = allCrossingSingal[cross_i].getActivePlanInfo();//获取控制方案表中该路口active为1的方案信息（PlanIndex,PhaseNum,Period,PhaseOffset）
+			//qps_GUI_printf("res_plan.size=%d plan_type=%d,seq=%d", res_plan.size(), str2int(res_plan[4]),seq++);
 			//存在active为1的控制方案
 			if (res_plan.size() > 0)
 			{
@@ -320,14 +316,16 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 				//MessageBox(NULL, "no active plan", "", MB_OK);
 			}
 		}
-		//取消信号化
-		else
+		else  //该路口没有信号化
 		{
-			allCrossingSingal[cross_i].setCrossingSingalised(0); //设该路口未信号化
-			NODE* pNode = qpg_NET_node(const_cast<char*>(allCrossingSingal[cross_i].crossingId.c_str()));
-			qps_NDE_externalController(pNode, PFALSE);//外部控制设置为FALSE，取消信号化
+			if (allCrossingSingal[cross_i].isSingal == 1) //本来是信号化的路口，现在取消信号化
+			{
+				allCrossingSingal[cross_i].setCrossingSingalised(0); //设该路口未信号化
+				NODE* pNode = qpg_NET_node(const_cast<char*>(allCrossingSingal[cross_i].crossingId.c_str()));
+				qps_NDE_externalController(pNode, PFALSE);//外部控制设置为FALSE，取消信号化
+			}
 
-			//查询crossingstream设置车流权限
+			//查询crossingstream表  设置车流权限，
 			vector<vector<string>> crossingstream_info=allCrossingSingal[cross_i].getCrossingstreamInfo();
 			for (size_t i = 0; i < crossingstream_info.size(); i++)
 			{
@@ -341,9 +339,6 @@ void CALLBACK TimerProc(HWND hWnd, UINT nMsg, UINT nTimerid, DWORD dwTime)
 				}
 			}
 		}
-		
-		
-		//qps_GUI_printf("planIndex=%d", allCrossingSingal[cross_i].getPlanIndex());
 	}
 	CrossingSingal::clearIsUpdate("controlplan");
 	CrossingSingal::clearIsUpdate("crossingstream");
@@ -425,8 +420,6 @@ void qpx_NET_second(void)
 					{
 						simData.occupancyEveryLoopDuration[i][j] += occ;
 					}
-						
-
 					simData.occupancyEveryLoop[i][j] = occ; //占用时间写入
 					simData.isOccupiedEveryLoop[i][j] = 0; //清标志位
 				}
@@ -439,21 +432,61 @@ void qpx_NET_second(void)
 	}
 
 
+	/********************更新路段统计信息******************/
+	//统计每条Road上所有link的数据
+	for (size_t i = 0; i < simData.allRoadId.size(); i++)
+	{	
+		//以该路段中入路口的那个link的车道数作为整个road的车道数
+		for (int m = 0; m < simData.laneNum[i][0]; m++)
+		{
+			size_t lane_0 = simData.laneNum[i][0] - m;
+			simData.RoadLength[i][lane_0 - 1] = 0.0;
+			float road_count = 0;
+			//遍历该road所有link
+			for (size_t j = 0; j < simData.linkPointerInRoad[i].size(); j++)
+			{
+				int lane_index = simData.laneNum[i][j] - m;
+				if (lane_index > 0)  //该条link存在
+				{
+					road_count += qpg_STA_count(simData.linkPointerInRoad[i][j], lane_index);//该road上车辆数
+					simData.RoadDelay[i][lane_0 - 1] += qpg_STA_delay(simData.linkPointerInRoad[i][j], lane_index);//延时累加
+					simData.RoadDensity[i][lane_0 - 1] += qpg_STA_density(simData.linkPointerInRoad[i][j], lane_index)*qpg_LNK_length(simData.linkPointerInRoad[i][j]);//密度乘以该link长度后累加
+					simData.RoadLength[i][lane_0 - 1] += qpg_LNK_length(simData.linkPointerInRoad[i][j]); //每条车道长度
+					simData.RoadFlow[i][lane_0 - 1] += qpg_STA_flow(simData.linkPointerInRoad[i][j], lane_index);   //flow累加
+					simData.RoadQueueCount[i][lane_0 - 1] += qpg_STA_stoplineQueueCount(simData.linkPointerInRoad[i][j], lane_index); //queueCount累加
+					simData.RoadQueuePCU[i][lane_0 - 1] += qpg_STA_stoplineQueuePCUs(simData.linkPointerInRoad[i][j], lane_index);//PCU累加
+					simData.RoadQueueLength[i][lane_0 - 1] += qpg_STA_stoplineQueueLength(simData.linkPointerInRoad[i][j], lane_index);//queueLength累加
+					if (qpg_STA_speed(simData.linkPointerInRoad[i][j], lane_index) > 0.0 && qpg_STA_count(simData.linkPointerInRoad[i][j], lane_index) > 0 )
+						simData.RoadSpeed[i][lane_0 - 1] += qpg_STA_speed(simData.linkPointerInRoad[i][j], lane_index) * qpg_STA_count(simData.linkPointerInRoad[i][j], lane_index);//speed乘以count后累加
+				}
+			}
+			//
+			if (road_count > simData.Roadcount[i][lane_0-1])    //保存最大的count
+			{
+				simData.Roadcount[i][lane_0 - 1] = road_count;
+			}
+			if (simData.RoadQueueCount[i][lane_0 - 1] > simData.RoadMaxQueueCount[i][lane_0 - 1])   //保存最大的QueueCount
+			{
+				simData.RoadMaxQueueCount[i][lane_0 - 1] = simData.RoadQueueCount[i][lane_0 - 1];
+			}
+			if (simData.RoadQueueLength[i][lane_0 - 1] > simData.RoadMaxQueueLength[i][lane_0 - 1])  //保存最大的QueueLength
+			{
+				simData.RoadMaxQueueLength[i][lane_0 - 1] = simData.RoadQueueLength[i][lane_0 - 1];
+			}
+		}
+	}
 
-
-    //每次到达设定时间间隔时
 	statistic_count++;
+	//每次到达设定时间间隔时
 	if (statistic_count == STATISTIC_STEP)
 	{
-		statistic_count = 0;
+		/*************************更新实时交通流信息*****************************/
+		statistic_count = 0; //重新计数
 		int date = qpg_CLK_date();
 		string simu_date = num2date(date);
-
+		//计算当前仿真时间
 		simData.simuTime = updateTime(simData.simuTime, STATISTIC_STEP);
-
-		//获取占有率
-		//float occupancy = simData.occupancyEveryLoopDuration[89][1];
-
+		//计算该时间段内数据文件
 		for (int i = 0; i < RA.DetectorNum; i++)
 		{
 			int sum = 0;
@@ -463,8 +496,6 @@ void qpx_NET_second(void)
 				//计算差分量（即该仿真时间段内的车辆通过数）
 				simData.countEveryLoopDiff[i][j] = count - simData.countEveryLoopDuration[i][j];
 
-
-				
 				if (simData.countEveryLoopDiff[i][j] == 0)
 				{
 					simData.velocityEveryLoopDuration[i][j] = 0.00;
@@ -487,14 +518,12 @@ void qpx_NET_second(void)
 				}
 
 			}
-
 			simData.countEveryDetector[i] = sum;
 		}
 
 		//统计时间间隔内的数据写入数据库
-		simData.writeAllDataToSql(RA.getDBoperation()->getMySql(),RA.DetectorNum);
-			
-		
+		simData.writeDetectorDataToSql(RA.getDBoperation()->getMySql(), RA.DetectorNum);
+
 		for (int i = 0; i < RA.DetectorNum; i++)
 		{
 			for (int j = 0; j < simData.loopNumArray[i]; j++)
@@ -505,16 +534,52 @@ void qpx_NET_second(void)
 				//清空velocity累计值
 				simData.velocityEveryLoopDuration[i][j] = 0;
 				//RoadNetInfo::isOccupiedEveryLoop[i][j] = 0; //清标志位
-
-
 			}
 		}
-	
+
+		//计算平均信息
+		for (size_t i = 0; i < simData.allRoadId.size(); i++)
+		{
+			for (int j = 0; j < simData.laneNum[i][0]; j++)
+			{
+				//simData.Roadcount[i][j] /= STATISTIC_STEP;
+				simData.RoadDelay[i][j] /= STATISTIC_STEP;
+				simData.RoadDensity[i][j] /= (STATISTIC_STEP*simData.RoadLength[i][j]);
+				simData.RoadFlow[i][j] /= STATISTIC_STEP;
+				simData.RoadQueueCount[i][j] /= STATISTIC_STEP;
+				simData.RoadQueuePCU[i][j] /= STATISTIC_STEP;
+				simData.RoadQueueLength[i][j] /= STATISTIC_STEP;
+				if (simData.Roadcount[i][j] <= 0.1)
+					simData.RoadSpeed[i][j] = 0.0;
+				else
+					simData.RoadSpeed[i][j] /= (STATISTIC_STEP*simData.Roadcount[i][j]);
+			}
+		}
+
+		//数据写入数据库
+		CString mes;
+		mes.Format("lane1=%.2f,lane2=%.2f,lane3=%.2f", simData.Roadcount[0][0], simData.RoadQueueCount[0][1], simData.RoadQueueCount[0][2]);
+		//MessageBox(NULL, mes, "", MB_OK);
+		simData.writeRoadDataToSql(RA.getDBoperation()->getMySql());
+
+		//数据请0
+		for (size_t i = 0; i < simData.allRoadId.size(); i++)
+		{
+			for (int j = 0; j < simData.laneNum[i][0]; j++)
+			{
+				simData.Roadcount[i][j] = 0;
+				simData.RoadDelay[i][j] = 0;
+				simData.RoadDensity[i][j] = 0;
+				simData.RoadFlow[i][j] = 0;
+				simData.RoadQueueCount[i][j] = 0;
+				simData.RoadQueueLength[i][j] = 0;
+				simData.RoadSpeed[i][j] = 0;
+				simData.RoadMaxQueueCount[i][j] = 0;
+				simData.RoadMaxQueueLength[i][j] = 0;
+			}
+		}
 	}
 }
-
-
-
 
 
 /*************************************************当路网关闭时*********************************************************/
